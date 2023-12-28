@@ -66,7 +66,7 @@ function getArtifactSha(artifact: Artifact): string {
 }
 
 function commitUrlAsHtml(sha: string): string {
-  return `<a href="https://github.com/rust-lang/rust/commit/${sha}">${sha.substring(
+  return `<a href="https://github.com/JuliaLang/julia/commit/${sha}">${sha.substring(
     0,
     13
   )}</a>`;
@@ -76,7 +76,7 @@ function pullRequestUrlAsHtml(pr: number | null): string {
   if (pr === null) {
     return "";
   }
-  return `<a href="https://github.com/rust-lang/rust/pull/${pr}">#${pr}</a>`;
+  return `<a href="https://github.com/JuliaLang/julia/pull/${pr}">#${pr}</a>`;
 }
 
 function formatCommitAsHtml(commit: Commit, reason: MissingReason): string {
