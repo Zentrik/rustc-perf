@@ -109,18 +109,6 @@ onMounted(() => {
               <td>Benchmark</td>
               <td>{{ testCase.benchmark }}</td>
             </tr>
-            <tr>
-              <td>Profile</td>
-              <td>{{ testCase.profile }}</td>
-            </tr>
-            <tr>
-              <td>Scenario</td>
-              <td>{{ testCase.scenario }}</td>
-            </tr>
-            <tr>
-              <td>Category</td>
-              <td>{{ testCase.category }}</td>
-            </tr>
             <tr v-if="(metadata?.binary ?? null) !== null">
               <td>Artifact</td>
               <td>{{ metadata.binary ? "binary" : "library" }}</td>
@@ -150,34 +138,6 @@ onMounted(() => {
       <div class="rows grow links">
         <div class="title bold">Links</div>
         <ul>
-          <li>
-            <a
-              :href="detailedQueryLink(props.artifact, props.baseArtifact)"
-              target="_blank"
-            >
-              Detailed results
-            </a>
-          </li>
-          <li>
-            Before:
-            <a :href="detailedQueryLink(props.baseArtifact)" target="_blank">
-              self-profile</a
-            >,
-            <PerfettoLink
-              :artifact="props.baseArtifact"
-              :test-case="props.testCase"
-              >query trace
-            </PerfettoLink>
-          </li>
-          <li>
-            After:
-            <a :href="detailedQueryLink(props.artifact)" target="_blank"
-              >self-profile</a
-            >,
-            <PerfettoLink :artifact="props.artifact" :test-case="props.testCase"
-              >query trace
-            </PerfettoLink>
-          </li>
           <li>
             <a
               :href="graphLink(props.artifact, props.metric, props.testCase)"
