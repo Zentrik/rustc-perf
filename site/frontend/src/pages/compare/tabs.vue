@@ -97,11 +97,11 @@ const activeTab: Ref<Tab> = ref(props.initialTab);
   <div class="wrapper">
     <div
       class="tab"
-      title="Runtime benchmarks: measure how long does it take to execute (i.e. how fast are) programs compiled by the compared rustc."
+      title="Benchmarks: measure how long does it take to execute various benchmarks."
       :class="{selected: activeTab === Tab.CompileTime}"
       @click="changeTab(Tab.CompileTime)"
     >
-      <div class="title">Runtime</div>
+      <div class="title">Benchmarks</div>
       <div class="summary table-wrapper">
         <SummaryTable :summary="compileTimeSummary" />
       </div>
