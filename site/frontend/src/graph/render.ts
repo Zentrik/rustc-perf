@@ -480,7 +480,7 @@ export function renderPlots(
           break;
         case "memory":
           yAxis = "Size of allocations";
-          yAxisUnit = "Bytes";
+          yAxisUnit = "bytes";
           break;
       }
 
