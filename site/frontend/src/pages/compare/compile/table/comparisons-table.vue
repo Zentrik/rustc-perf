@@ -25,7 +25,7 @@ function prettifyRawNumber(number: number): string {
 
 // Modify this when changing the number of columns in the table!
 const columnCount = computed(() => {
-  const base = 8;
+  const base = 5;
   if (props.showRawData) {
     return base + 2;
   }
@@ -54,9 +54,6 @@ const {toggleExpanded, isExpanded} = useExpandedStore();
         <tr>
           <th class="toggle-arrow"></th>
           <th>Benchmark</th>
-          <th>Profile</th>
-          <th>Scenario</th>
-          <th>Backend</th>
           <th>% Change</th>
           <th class="narrow">
             Significance Threshold
@@ -96,11 +93,6 @@ const {toggleExpanded, isExpanded} = useExpandedStore();
             <td>
               {{ comparison.testCase.benchmark }}
             </td>
-            <td>
-              {{ comparison.testCase.profile }}
-            </td>
-            <td>{{ comparison.testCase.scenario }}</td>
-            <td>{{ comparison.testCase.backend }}</td>
             <td>
               <div class="numeric-aligned">
                 <span v-bind:class="percentClass(comparison.percent)">
