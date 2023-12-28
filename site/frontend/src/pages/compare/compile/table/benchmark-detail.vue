@@ -239,7 +239,7 @@ function getGraphTitle() {
 }
 
 function benchmarkLink(benchmark: string): string {
-  return `https://github.com/rust-lang/rustc-perf/tree/master/collector/compile-benchmarks/${benchmark}`;
+  return `https://github.com/JuliaCI/BaseBenchmarks.jl/tree/master/src/${benchmark.split('.')[0]}`;
 }
 
 function detailedQueryLink(
@@ -464,12 +464,6 @@ onMounted(() => {
           :test-case="props.testCase"
         />
       </template>
-      <ProfileShortcut
-        v-else
-        :artifact="props.artifact"
-        :base-artifact="props.baseArtifact"
-        :test-case="props.testCase"
-      />
     </div>
   </div>
 </template>
