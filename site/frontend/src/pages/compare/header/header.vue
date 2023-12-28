@@ -49,7 +49,7 @@ const nextLink = computed(
 );
 const compareLink = computed(
   () =>
-    `https://github.com/rust-lang/rust/compare/${props.data.a.commit}...${props.data.b.commit}`
+    `https://github.com/JuliaLang/julia/compare/${props.data.a.commit}...${props.data.b.commit}`
 );
 
 const before = computed(() =>
