@@ -463,7 +463,7 @@ export function renderPlots(
         yAxisUnit = null;
       } else if (selector.stat == "memory") {
         yAxis = "Size of allocations";
-        yAxisUnit = "Bytes";
+        yAxisUnit = "bytes";
       }
 
       if (selector.kind == "raw" && benchName == "Summary") {
