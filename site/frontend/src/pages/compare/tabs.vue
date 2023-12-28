@@ -99,8 +99,8 @@ const activeTab: Ref<Tab> = ref(props.initialTab);
 <template>
   <div class="wrapper">
     <TabComponent
-      tooltip="Runtime benchmarks: measure how long does it take to execute (i.e. how fast are) programs compiled by the compared rustc."
-      title="Runtime"
+      tooltip="Benchmarks: measure how long does it take to execute various benchmarks."
+      title="Benchmarks"
       :selected="activeTab === Tab.CompileTime"
       @click="changeTab(Tab.CompileTime)"
     >
