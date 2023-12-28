@@ -443,9 +443,9 @@ export function renderPlots(
       } else if (selector.stat == "task-clock") {
         yAxis = "Task clock";
         yAxisUnit = "seconds";
-      } else if (selector.stat == "wall-time") {
-        yAxis = "Wall time";
-        yAxisUnit = "seconds";
+      } else if (selector.stat == "min-wall-time") {
+        yAxis = "Minimum wall time";
+        yAxisUnit = "nanoseconds";
       } else if (selector.stat == "max-rss") {
         yAxis = "Maximum resident set size";
         yAxisUnit = "kB";

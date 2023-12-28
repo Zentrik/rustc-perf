@@ -131,7 +131,7 @@ pub async fn handle_graphs(
         == graphs::Request {
             start: Bound::None,
             end: Bound::None,
-            stat: String::from("instructions:u"),
+            stat: String::from("min-wall-time"),
             kind: graphs::GraphKind::Raw,
             benchmark: None,
             scenario: None,
