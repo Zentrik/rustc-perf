@@ -97,70 +97,13 @@ const activeTab: Ref<Tab> = ref(props.initialTab);
   <div class="wrapper">
     <div
       class="tab"
-      title="Compilation time benchmarks: measure how long does it take to compile various crates using the compared rustc."
+      title="Runtime benchmarks: measure how long does it take to execute (i.e. how fast are) programs compiled by the compared rustc."
       :class="{selected: activeTab === Tab.CompileTime}"
       @click="changeTab(Tab.CompileTime)"
     >
-      <div class="title">Compile-time</div>
-      <div class="summary table-wrapper">
-        <SummaryTable :summary="compileTimeSummary" />
-      </div>
-    </div>
-    <div
-      class="tab"
-      title="Runtime benchmarks: measure how long does it take to execute (i.e. how fast are) programs compiled by the compared rustc."
-      :class="{selected: activeTab === Tab.Runtime}"
-      @click="changeTab(Tab.Runtime)"
-    >
       <div class="title">Runtime</div>
       <div class="summary table-wrapper">
-        <SummaryTable :summary="runtimeSummary" />
-      </div>
-    </div>
-    <div
-      class="tab"
-      title="Bootstrap duration: measures how long does it take to compile rustc by itself."
-      :class="{selected: activeTab === Tab.Bootstrap}"
-      @click="changeTab(Tab.Bootstrap)"
-    >
-      <div class="title">Bootstrap</div>
-      <div class="summary">
-        <div>
-          {{ formatBootstrap(bootstrapA) }} ->
-          {{ formatBootstrap(bootstrapB) }}
-        </div>
-        <div
-          v-if="bootstrapValid"
-          :class="{[diffClass(bootstrapB - bootstrapA)]: bootstrapValid}"
-        >
-          {{ ((bootstrapB - bootstrapA) / 10e8).toFixed(1) }}s ({{
-            (((bootstrapB - bootstrapA) / bootstrapA) * 100).toFixed(3)
-          }}%)
-        </div>
-      </div>
-    </div>
-    <div
-      class="tab"
-      title="Artifact size: sizes of individual components of the two artifacts."
-      v-if="sizesAvailable"
-      :class="{selected: activeTab === Tab.ArtifactSize}"
-      @click="changeTab(Tab.ArtifactSize)"
-    >
-      <div class="title">Artifact size</div>
-      <div class="summary">
-        <div>
-          {{ formatArtifactSize(totalSizeA) }} ->
-          {{ formatArtifactSize(totalSizeB) }}
-        </div>
-        <div
-          v-if="bothSizesAvailable"
-          :class="diffClass(totalSizeB - totalSizeA)"
-        >
-          {{ totalSizeB < totalSizeA ? "-" : ""
-          }}{{ formatSize(Math.abs(totalSizeB - totalSizeA)) }} ({{
-            formatPercentChange(totalSizeA, totalSizeB)
-          }})
-        </div>
+        <SummaryTable :summary="compileTimeSummary" />
       </div>
     </div>
   </div>
