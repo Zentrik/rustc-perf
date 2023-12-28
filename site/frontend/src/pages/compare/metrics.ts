@@ -28,7 +28,7 @@ const sharedMetrics: MetricDescription[] = [
   {
     label: "Memory",
     metric: "memory",
-    description: "Size of heap allocations in Bytes",
+    description: "Size of heap allocations (bytes)",
   },
 ];
 
