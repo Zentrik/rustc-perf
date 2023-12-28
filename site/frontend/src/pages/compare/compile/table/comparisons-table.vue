@@ -26,7 +26,7 @@ function prettifyRawNumber(number: number): string {
 
 // Modify this when changing the number of columns in the table!
 const columnCount = computed(() => {
-  const base = 8;
+  const base = 5;
   if (props.showRawData) {
     return base + 2;
   }
@@ -54,9 +54,6 @@ const unit = computed(() => {
         <tr>
           <th class="toggle-arrow"></th>
           <th>Benchmark</th>
-          <th>Profile</th>
-          <th>Scenario</th>
-          <th>Backend</th>
           <th>% Change</th>
           <th class="narrow">
             Significance Threshold
