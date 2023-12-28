@@ -446,12 +446,24 @@ export function renderPlots(
       } else if (selector.stat == "min-wall-time") {
         yAxis = "Minimum wall time";
         yAxisUnit = "nanoseconds";
+      } else if (selector.stat == "median-wall-time") {
+        yAxis = "Median wall time";
+        yAxisUnit = "nanoseconds";
+      } else if (selector.stat == "mean-wall-time") {
+        yAxis = "Mean wall time";
+        yAxisUnit = "nanoseconds";
       } else if (selector.stat == "max-rss") {
         yAxis = "Maximum resident set size";
         yAxisUnit = "kB";
       } else if (selector.stat == "faults") {
         yAxis = "Faults";
         yAxisUnit = "count";
+      } else if (selector.stat == "allocs") {
+        yAxis = "Number of allocations";
+        yAxisUnit = null;
+      } else if (selector.stat == "memory") {
+        yAxis = "Size of allocations";
+        yAxisUnit = "Bytes";
       }
 
       if (selector.kind == "raw" && benchName == "Summary") {

@@ -26,39 +26,70 @@ function process_benchmark_archive(path, aid, artifact_df, pstat_df, pstat_serie
             data = dir
         end
 
+        firstfile = true
         for file in readdir(data)
-            if !endswith(file, ".json") || !contains(file, r".minimum.json")
+            if !endswith(file, ".json") || !contains(file, r".(minimum|median|mean).json")
                 continue
             end
+            primary_metric = split(file, '.')[end-1]
+            if primary_metric == "minimum"
+                primary_metric = "min-wall-time"
+            elseif primary_metric == "median"
+                primary_metric = "median-wall-time"
+            elseif primary_metric == "mean"
+                primary_metric = "mean-wall-time"
+            # elseif primary_metric == "std" # parsing std files fails
+            #     primary_metric = "std-wall-time"
+            else
+                throw("Unknown metric")
+            end
+
             group = BenchmarkTools.load(joinpath(data, file))[1]
             return_group_only && return group
 
             artifact_row = create_artifact_row(path, file, aid)
 
-            data = rec_flatten_benchmarkgroup(group)
-            series_ids = [pstat_series_table[findfirst(==(name), pstat_series_table[:, "crate"]), "id"] for name in keys(data)]
-            pstat_rows = create_pstat_rows(series_ids, aid, (data |> values |> collect .|> x->getfield(x, :time)))# ./ 1e9)
-
-            if isnothing(artifact_df)
-                artifact_df = artifact_row
-                pstat_df = pstat_rows
+            # Sometimes the same commit is benchmarked multiple times, so we store the most recent data
+            if isempty(artifact_df)
+                idx = nothing
             else
-                idx = findfirst(==(artifact_row[1, "name"]), artifact_df[:, "name"])
-                if !isnothing(idx)
-                    if artifact_row[1, "date"] > artifact_df[idx, "date"]
-                        artifact_df[idx, "date"] = artifact_row[1, "date"]
+                idx = findfirst(==(artifact_row.name), artifact_df[:, "name"])
+            end
+            if !isnothing(idx)
+                if artifact_row.date > artifact_df[idx, "date"]
+                    artifact_df[idx, "date"] = artifact_row.date
 
-                        aid = artifact_df[idx, "id"]
-                        idxs_to_del = findall(row->row["aid"]==aid, eachrow(pstat_df))
-                        deleteat!(pstat_df, idxs_to_del)
-                    end
-                else
-                    artifact_df = append!(artifact_df, artifact_row)
+                    aid = artifact_df[idx, "id"]
+                    idxs_to_del = findall(row->row["aid"]==aid, eachrow(pstat_df))
+                    deleteat!(pstat_df, idxs_to_del)
                 end
-                pstat_df = append!(pstat_df, pstat_rows)
+            else
+                push!(artifact_df, artifact_row)
             end
 
-            return artifact_df, pstat_df
+            benchmark_data = rec_flatten_benchmarkgroup(group)
+
+            # need to tranform into vector as indexing into df extremely slow
+            names_col = pstat_series_table[:, "crate"]
+            metrics_col = pstat_series_table[:, "metric"]
+
+            for (benchmark_name, trial) in benchmark_data
+                if firstfile # get alloc and memory data, same for all files
+                    for metric in (:allocs, :memory) # allocs is num of allocations, memory is in bytes
+                        series_id_idx = findfirst(i->names_col[i] == benchmark_name && metrics_col[i] == string(metric), 1:length(names_col))
+                        series_id = pstat_series_table[series_id_idx, :id]
+                        pstat_row = (series=series_id, aid=aid, cid=0, value=Float64(getfield(trial, metric)))
+                        push!(pstat_df, pstat_row)
+                    end
+                end
+
+                series_id_idx = findfirst(i->names_col[i] == benchmark_name && metrics_col[i] == primary_metric, 1:length(names_col))
+                series_id = pstat_series_table[series_id_idx, :id]
+                pstat_row = (series=series_id, aid=aid, cid=0, value=Float64(trial.time)) # time in ns
+                push!(pstat_df, pstat_row)
+            end
+
+            firstfile = false
         end
     end
 end
@@ -71,7 +102,7 @@ end
 function create_artifact_row(path, file, id)
     commit_sha = split(file, '_')[1]
     date = join(splitpath(path)[end-2:end-1], '-') |> DateTime |> datetime2unix |> Int64
-    DataFrame(id=id, name=commit_sha, date=date, type="master")
+    (id=id, name=commit_sha, date=date, type="master")
 end
 
 function rec_flatten_benchmarkgroup(d)
@@ -98,13 +129,21 @@ function create_benchmark(data::AbstractDict)
 end
 
 function create_pstat_series(benchmark_table)
-    len = nrow(benchmark_table)
-    DataFrame(id=1:len, crate=benchmark_table[:, "name"], profile=fill("opt", len), scenario=fill("full", len), backend=fill("llvm", len), metric=fill("min-wall-time", len))
+    df = DataFrame()
+
+    pid = 1
+    for row in eachrow(benchmark_table)
+        for metric in ("min-wall-time", "median-wall-time", "mean-wall-time", "allocs", "memory")
+            push!(df, (id=pid, crate=row["name"], profile="opt", scenario="full", backend="llvm", metric=metric))
+            pid += 1
+        end
+    end
+
+    return df
 end
 
-function process_benchmark(dir)
+function process_benchmarks(dir)
     db = SQLite.DB("julia.db")
-    # db = nothing
 
     # id_query = DBInterface.execute(db, "SELECT id FROM artifact ORDER BY id DESC LIMIT 1") |> DataFrame
     # id = isempty(id_query) ? 1 : id_query[1, "id"]+1
@@ -112,15 +151,13 @@ function process_benchmark(dir)
 
     pstat_series_table = DBInterface.execute(db, "SELECT * FROM pstat_series") |> DataFrame
 
-    artifact_df = nothing
-    pstat_df = nothing
+    artifact_df = DataFrame()
+    pstat_df = DataFrame()
 
     for (root, dirs, files) in walkdir(dir)
         for file in files
             if contains(file, r"^data.tar.\w+$")
                 result = process_benchmark_archive(joinpath(root, file), id, artifact_df, pstat_df, pstat_series_table)
-                isnothing(result) && continue
-                artifact_df, pstat_df = result
                 id += 1
             end
         end
@@ -135,12 +172,12 @@ function process_benchmark(dir)
 end
 
 function main()
-    process_benchmark(joinpath(@__DIR__, "..", "/NanosoldierReports/benchmark/by_date"))
-    # process_benchmark(joinpath(@__DIR__, "..", "..", "benchmark/by_date"))
+    process_benchmarks("/home/rag/Documents/Code/NanosoldierReports/benchmark/by_date")
 end
 
 function create_tables()
-    dir = joinpath(@__DIR__, "..", "/NanosoldierReports/benchmark/by_date")
+    dir = "/home/rag/Documents/Code/NanosoldierReports/benchmark/by_date"
+    @show dir
     # dates = readdir(dir)
     # sort!(dates; by=x->DateTime(x))
     # last_date = dates[end]
@@ -173,6 +210,8 @@ function create_tables()
     end
 
     pstat_series_table = create_pstat_series(benchmark_table)
+
+    return benchmark_table, pstat_series_table
 
     db = SQLite.DB("julia.db")
 
