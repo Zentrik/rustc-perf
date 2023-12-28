@@ -9,10 +9,10 @@ const props = defineProps<{
 }>();
 
 function prLink(pr: number | null): string {
-  return `https://github.com/rust-lang/rust/pull/${pr}`;
+  return `https://github.com/JuliaLang/julia/pull/${pr}`;
 }
 function commitLink(commit: string): string {
-  return `https://github.com/rust-lang/rust/commit/${commit}`;
+  return `https://github.com/JuliaLang/julia/commit/${commit}`;
 }
 function short(artifact: ArtifactDescription): string {
   return shortCommit(artifact.commit);
