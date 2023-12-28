@@ -381,11 +381,11 @@ async fn serve_req(server: Server, req: Request) -> Result<Response, ServerError
                 .handle_get_async(&req, request_handlers::handle_dashboard)
                 .await;
         }
-        "/perf/status_page" => {
-            return server
-                .handle_get_async(&req, request_handlers::handle_status_page)
-                .await;
-        }
+        // "/perf/status_page" => {
+        //     return server
+        //         .handle_get_async(&req, request_handlers::handle_status_page)
+        //         .await;
+        // }
         "/perf/next_artifact" => {
             return server
                 .handle_get_async(&req, request_handlers::handle_next_artifact)
