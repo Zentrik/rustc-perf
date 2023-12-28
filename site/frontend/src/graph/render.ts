@@ -456,6 +456,14 @@ export function renderPlots(
           yAxis = "Minimum wall time";
           yAxisUnit = "nanoseconds";
           break;
+        case "median-wall-time":
+          yAxis = "Median wall time";
+          yAxisUnit = "nanoseconds";
+          break;
+        case "mean-wall-time":
+          yAxis = "Mean wall time";
+          yAxisUnit = "nanoseconds";
+          break;
         case "max-rss":
           yAxis = "Maximum resident set size";
           yAxisUnit = "kB";
@@ -463,6 +471,14 @@ export function renderPlots(
         case "faults":
           yAxis = "Faults";
           yAxisUnit = "count";
+          break;
+        case "allocs":
+          yAxis = "Number of allocations";
+          yAxisUnit = null;
+          break;
+        case "memory":
+          yAxis = "Size of allocations";
+          yAxisUnit = "Bytes";
           break;
       }
 
