@@ -33,10 +33,10 @@ const columnCount = computed(() => {
   return base;
 });
 const unit = computed(() => {
-  // The DB stored wall-time data in seconds for compile benchmarks, so it is
+  // The DB stored wall-time data in nanoseconds for compile benchmarks, so it is
   // hardcoded here
-  if (props.stat == "wall-time") {
-    return "s";
+  if (props.stat == "min-wall-time") {
+    return "ns";
   } else {
     return null;
   }

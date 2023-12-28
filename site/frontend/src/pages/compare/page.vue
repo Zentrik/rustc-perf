@@ -33,7 +33,7 @@ import ArtifactSizeTable from "./artifact-size/artifact-size-table.vue";
 function loadSelectorFromUrl(urlParams: Dict<string>): CompareSelector {
   const start = urlParams["start"] ?? "";
   const end = urlParams["end"] ?? "";
-  const stat = urlParams["stat"] ?? "instructions:u";
+  const stat = urlParams["stat"] ?? "min-wall-time";
   return {
     start,
     end,

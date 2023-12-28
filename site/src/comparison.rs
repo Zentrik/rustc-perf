@@ -59,7 +59,7 @@ pub async fn handle_triage(
     let mut before = start.clone();
 
     let mut num_comparisons = 0;
-    let metric = body.metric.unwrap_or(Metric::InstructionsUser);
+    let metric = body.metric.unwrap_or(Metric::MinWallTime);
     let benchmark_map = ctxt.get_benchmark_category_map().await;
 
     let end = loop {
@@ -260,8 +260,8 @@ pub enum Metric {
     TaskClock,
     #[serde(rename = "task-clock:u")]
     TaskClockUser,
-    #[serde(rename = "wall-time")]
-    WallTime,
+    #[serde(rename = "min-wall-time")]
+    MinWallTime,
     #[serde(rename = "branch-misses")]
     BranchMisses,
     #[serde(rename = "cache-misses")]
@@ -323,7 +323,7 @@ impl Metric {
             Metric::MaxRSS => "max-rss",
             Metric::TaskClock => "task-clock",
             Metric::TaskClockUser => "task-clock:u",
-            Metric::WallTime => "wall-time",
+            Metric::MinWallTime => "min-wall-time",
             Metric::BranchMisses => "branch-misses",
             Metric::CacheMisses => "cache-misses",
             Metric::CodegenUnitSize => "size:codegen_unit_size_estimate",
