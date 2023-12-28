@@ -260,6 +260,14 @@ pub enum Metric {
     TaskClock,
     #[serde(rename = "task-clock:u")]
     TaskClockUser,
+    #[serde(rename = "allocs")]
+    Allocs,
+    #[serde(rename = "memory")]
+    Memory,
+    #[serde(rename = "mean-wall-time")]
+    MeanWallTime,
+    #[serde(rename = "median-wall-time")]
+    MedianWallTime,
     #[serde(rename = "min-wall-time")]
     MinWallTime,
     #[serde(rename = "branch-misses")]
@@ -323,6 +331,10 @@ impl Metric {
             Metric::MaxRSS => "max-rss",
             Metric::TaskClock => "task-clock",
             Metric::TaskClockUser => "task-clock:u",
+            Metric::Allocs => "allocs",
+            Metric::Memory => "memory",
+            Metric::MeanWallTime => "mean-wall-time",
+            Metric::MedianWallTime => "median-wall-time",
             Metric::MinWallTime => "min-wall-time",
             Metric::BranchMisses => "branch-misses",
             Metric::CacheMisses => "cache-misses",
