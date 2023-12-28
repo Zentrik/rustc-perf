@@ -33,41 +33,6 @@ const opened = createPersistedRef(PREF_AGGREGATIONS_OPENED);
       <template #content>
         <div>
           <div class="aggregation-section">
-            <div class="header">Profile</div>
-            <div class="groups">
-              <div
-                class="group"
-                v-for="profile in ['check', 'debug', 'opt', 'doc']"
-              >
-                <div class="group-header">{{ profile }}</div>
-                <SummaryTable
-                  :summary="calculateSummary('profile', profile)"
-                  :withLegend="false"
-                ></SummaryTable>
-              </div>
-            </div>
-          </div>
-          <div class="aggregation-section">
-            <div class="header">Scenario</div>
-            <div class="groups">
-              <div
-                class="group"
-                v-for="scenario in [
-                  'full',
-                  'incr-full',
-                  'incr-unchanged',
-                  'incr-patched',
-                ]"
-              >
-                <div class="group-header">{{ scenario }}</div>
-                <SummaryTable
-                  :summary="calculateSummary('scenario', scenario)"
-                  :withLegend="false"
-                ></SummaryTable>
-              </div>
-            </div>
-          </div>
-          <div class="aggregation-section">
             <div class="header">Category</div>
             <div class="groups">
               <div class="group" v-for="category in ['primary', 'secondary']">
