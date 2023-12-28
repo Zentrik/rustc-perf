@@ -34,8 +34,10 @@ const columnCount = computed(() => {
 const unit = computed(() => {
   // The DB stored wall-time data in nanoseconds for compile benchmarks, so it is
   // hardcoded here
-  if (props.stat == "min-wall-time") {
+  if (props.stat.split('-').pop() == "time") {
     return "ns";
+  } else if (props.stat == "memory") {
+    return "B"
   } else {
     return null;
   }
