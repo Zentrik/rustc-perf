@@ -99,67 +99,13 @@ const activeTab: Ref<Tab> = ref(props.initialTab);
 <template>
   <div class="wrapper">
     <TabComponent
-      tooltip="Compilation time benchmarks: measure how long does it take to compile various crates using the compared rustc."
-      title="Compile-time"
+      tooltip="Runtime benchmarks: measure how long does it take to execute (i.e. how fast are) programs compiled by the compared rustc."
+      title="Runtime"
       :selected="activeTab === Tab.CompileTime"
       @click="changeTab(Tab.CompileTime)"
     >
       <template v-slot:summary>
         <SummaryTable :summary="compileTimeSummary" />
-      </template>
-    </TabComponent>
-    <TabComponent
-      tooltip="Runtime benchmarks: measure how long does it take to execute (i.e. how fast are) programs compiled by the compared rustc."
-      title="Runtime"
-      :selected="activeTab === Tab.Runtime"
-      @click="changeTab(Tab.Runtime)"
-    >
-      <template v-slot:summary>
-        <SummaryTable :summary="runtimeSummary" />
-      </template>
-    </TabComponent>
-    <TabComponent
-      tooltip="Bootstrap duration: measures how long does it take to compile rustc by itself."
-      title="Bootstrap"
-      :selected="activeTab === Tab.Bootstrap"
-      @click="changeTab(Tab.Bootstrap)"
-    >
-      <template v-slot:summary>
-        <div>
-          {{ formatBootstrap(bootstrapA) }} ->
-          {{ formatBootstrap(bootstrapB) }}
-        </div>
-        <div
-          v-if="bootstrapValid"
-          :class="{[diffClass(bootstrapB - bootstrapA)]: bootstrapValid}"
-        >
-          {{ ((bootstrapB - bootstrapA) / 10e8).toFixed(1) }}s ({{
-            (((bootstrapB - bootstrapA) / bootstrapA) * 100).toFixed(3)
-          }}%)
-        </div>
-      </template>
-    </TabComponent>
-    <TabComponent
-      tooltip="Artifact size: sizes of individual components of the two artifacts."
-      title="Artifact size"
-      v-if="sizesAvailable"
-      :selected="activeTab === Tab.ArtifactSize"
-      @click="changeTab(Tab.ArtifactSize)"
-    >
-      <template v-slot:summary>
-        <div>
-          {{ formatArtifactSize(totalSizeA) }} ->
-          {{ formatArtifactSize(totalSizeB) }}
-        </div>
-        <div
-          v-if="bothSizesAvailable"
-          :class="diffClass(totalSizeB - totalSizeA)"
-        >
-          {{ totalSizeB < totalSizeA ? "-" : ""
-          }}{{ formatSize(Math.abs(totalSizeB - totalSizeA)) }} ({{
-            formatPercentChange(totalSizeA, totalSizeB)
-          }})
-        </div>
       </template>
     </TabComponent>
   </div>
