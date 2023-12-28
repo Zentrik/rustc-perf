@@ -1,0 +1,9 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CodecXz = "ba30903b-d9e8-5048-a5ec-d1f5b0d4b47b"
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+CodecZstd = "6b39b394-51ab-5f42-8807-6242bab2b4c2"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
+Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
