@@ -454,9 +454,9 @@ export function renderPlots(
           yAxis = "Task clock";
           yAxisUnit = "seconds";
           break;
-        case "wall-time":
-          yAxis = "Wall time";
-          yAxisUnit = "seconds";
+        case "min-wall-time":
+          yAxis = "Minimum wall time";
+          yAxisUnit = "nanoseconds";
           break;
         case "max-rss":
           yAxis = "Maximum resident set size";

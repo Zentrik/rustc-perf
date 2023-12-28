@@ -17,7 +17,7 @@ function loadSelectorFromUrl(urlParams: Dict<string>): GraphsSelector {
   const start = urlParams["start"] ?? "";
   const end = urlParams["end"] ?? "";
   const kind: GraphKind = (urlParams["kind"] as GraphKind) ?? "raw";
-  const stat = urlParams["stat"] ?? "instructions:u";
+  const stat = urlParams["stat"] ?? "min-wall-time";
   const benchmark = urlParams["benchmark"] ?? null;
   const scenario = urlParams["scenario"] ?? null;
   const profile = urlParams["profile"] ?? null;

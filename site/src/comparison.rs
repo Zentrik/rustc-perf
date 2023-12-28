@@ -58,7 +58,7 @@ pub async fn handle_triage(
     let mut before = start.clone();
 
     let mut num_comparisons = 0;
-    let metric = body.metric.unwrap_or(Metric::InstructionsUser);
+    let metric = body.metric.unwrap_or(Metric::MinWallTime);
     let benchmark_map = ctxt.get_benchmark_category_map().await;
 
     let end = loop {

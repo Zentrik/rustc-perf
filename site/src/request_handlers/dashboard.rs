@@ -83,7 +83,7 @@ pub async fn handle_dashboard(ctxt: Arc<SiteCtxt>) -> ServerResult<dashboard::Re
 
     let compile_benchmark_query = selector::CompileBenchmarkQuery::default()
         .benchmark(selector::Selector::Subset(STABLE_BENCHMARKS.clone()))
-        .metric(selector::Selector::One(Metric::WallTime));
+        .metric(selector::Selector::One(Metric::MinWallTime));
 
     let summary_scenarios = ctxt.summary_scenarios();
     let aids = &artifact_ids;
