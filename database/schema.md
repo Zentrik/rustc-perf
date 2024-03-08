@@ -1,3 +1,13 @@
+# Important Tables
+
+1 │ artifact
+3 │ pstat
+
+11 │ benchmark
+<!-- 12 │ runtime_pstat_series -->
+<!-- 13 │ runtime_pstat -->
+16 │ pstat_series
+
 # Schema
 
 Below is an explanation of the current database schema. This schema is duplicated across the (currently) two database backends we support: sqlite and postgres.
@@ -16,7 +26,7 @@ Below are some diagrams showing the basic layout of the database schema for thes
 
 Here is the diagram for compile-time benchmarks:
 ```
-  ┌────────────┐  ┌───────────────┐  ┌────────────┐   
+  ┌────────────┐  ┌───────────────┐  ┌────────────┐
   │ benchmark  │  │ collection    │  │ artifact   │
   ├────────────┤  ├───────────────┤  ├────────────┤
 ┌►│ name *     │  │ id *          │◄┐│ id *       │◄┐
@@ -28,9 +38,9 @@ Here is the diagram for compile-time benchmarks:
 │                                   │               │
 │ ┌───────────────┐  ┌──────────┐   │               │
 │ │ pstat_series  │  │ pstat    │   │               │
-│ ├───────────────┤  ├──────────┤   │               │ 
+│ ├───────────────┤  ├──────────┤   │               │
 │ │ id *          │◄┐│ id *     │   │               │
-└─┤ crate         │ └┤ series   │   │               │ 
+└─┤ crate         │ └┤ series   │   │               │
   │ profile       │  │ aid      ├───┼───────────────┘
   │ scenario      │  │ cid      │   │
   │ backend       │  │ value    ├───┘
@@ -56,7 +66,7 @@ This description includes:
 
 ```
 sqlite> select * from artifact limit 1;
-id          name        date        type   
+id          name        date        type
 ----------  ----------  ----------  -------
 1           LOCAL_TEST              release
 ```
@@ -89,8 +99,8 @@ Currently, the collection also marks the git sha of the currently running collec
 
 ```
 sqlite> select * from collection limit 1;
-id          perf_commit 
-----------  ----------------------------------------
+id          perf_commit
+----------  ----------------------------------------fcollector_progress
 1           d9fd96f409a15429757030f225b082744a72516c
 ```
 
@@ -118,7 +128,7 @@ aid         date_recorded  duration
 
 ### benchmark
 
-The different types of compile-time benchmarks that are run. 
+The different types of compile-time benchmarks that are run.
 
 The table stores the name of the benchmark, whether it is capable of being run using the stable compiler,
 and its category. The benchmark name is used as a foreign key in many of the other tables.
