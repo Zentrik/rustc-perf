@@ -259,3 +259,21 @@ function create_tables()
 
     nothing
 end
+
+using LibGit2
+function fix_dates()
+    db = SQLite("julia.db")
+    artifacts_table = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
+
+    mktempdir() do dir
+        repo = LibGit2.clone("https://github.com/JuliaLang/julia.git", dir)
+        for (i, row) in pairs(eachrow(artifacts_table))
+            commit = LibGit2.GitCommit(repo, row.name)
+            commit_date = LibGit2.author(commit).time
+            artifacts_table[i, "date"] = commit_date
+        end
+    end
+
+    DBInterface.execute(db, "DELETE FROM artifact")
+    artifacts_table |> SQLite.load!(db, "artifact")
+end
