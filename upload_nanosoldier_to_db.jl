@@ -50,7 +50,7 @@ function process_benchmark_archive!(df, path, artifact_id, db, benchmark_to_psta
                     # artifact_row = (id=artifact_id, name=commit_sha, date=date, type="master")
                     DBInterface.execute(db, "INSERT INTO artifact (id, name, date, type) VALUES ($(artifact_row.id), '$(artifact_row.name)', $(artifact_row.date), '$(artifact_row.type)')")
                 else
-                    if artifact_row.date > artifact_query[1, "date"]
+                    if false # changed date to be time of commit so this check: artifact_row.date > artifact_query[1, "date"], no longer is useful
                         DBInterface.execute(db, "UPDATE artifact SET date=$(artifact_row.date) WHERE name='$(artifact_row.name)'")
 
                         aid = artifact_query[1, "id"]
