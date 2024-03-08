@@ -2,6 +2,7 @@ using Tar, CodecZlib, CodecXz, CodecZstd
 using BenchmarkTools
 using DataFrames, Dates
 using SQLite
+using HTTP, JSON3
 
 function process_benchmark_archive!(df, path, artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
     println("Processing $path...")
@@ -112,7 +113,8 @@ end
 
 function create_artifact_row(path, file, id)
     commit_sha = split(file, '_')[1]
-    date = join(splitpath(path)[end-2:end-1], '-') |> DateTime |> datetime2unix |> Int64
+    commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$commit_sha").body |> JSON3.read
+    date = DateTime(commit_details.author.date, "yyyy-mm-ddTHH:MM:SSZ") |> datetime2unix |> Int64
     (id=id, name=commit_sha, date=date, type="master")
 end
 
