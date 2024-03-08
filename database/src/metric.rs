@@ -38,6 +38,12 @@ pub enum Metric {
     MedianWallTime,
     #[serde(rename = "min-wall-time")]
     MinWallTime,
+    #[serde(rename = "mean-gc-time")]
+    MeanGCTime,
+    #[serde(rename = "median-gc-time")]
+    MedianGCTime,
+    #[serde(rename = "min-gc-time")]
+    MinGCTime,
     #[serde(rename = "branch-misses")]
     BranchMisses,
     #[serde(rename = "cache-misses")]
@@ -104,6 +110,9 @@ impl Metric {
             Metric::MeanWallTime => "mean-wall-time",
             Metric::MedianWallTime => "median-wall-time",
             Metric::MinWallTime => "min-wall-time",
+            Metric::MeanGCTime => "mean-gc-time",
+            Metric::MedianGCTime => "median-gc-time",
+            Metric::MinGCTime => "min-gc-time",
             Metric::BranchMisses => "branch-misses",
             Metric::CacheMisses => "cache-misses",
             Metric::CodegenUnitSize => "size:codegen_unit_size_estimate",
