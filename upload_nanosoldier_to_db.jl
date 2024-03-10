@@ -1,12 +1,13 @@
 using Tar, CodecZlib, CodecXz, CodecZstd
 using BenchmarkTools
-using DataFrames, Dates
+using DataFrames, Dates, TimeZones
 using SQLite
 using HTTP, JSON3
 
-function process_benchmark_archive!(df, path, artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
+function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
     println("Processing $path...")
     mktempdir() do dir
+    # dir = mktempdir()
         # extract
         open(path) do io
             stream = if endswith(path, ".xz")
@@ -21,13 +22,19 @@ function process_benchmark_archive!(df, path, artifact_id, db, benchmark_to_psta
             Tar.extract(stream, dir)
         end
 
+        # TODO: Support non full benchmark suites, to do need to address TODO about overwriting data conditionally
+        report_file = readuntil(joinpath(splitpath(path)[1:end-1]..., "report.md"), "## Results")
+        if !return_group_only && !occursin("*Tag Predicate:* `ALL`", report_file)
+            return
+        end
+
         # strip the contained "data" directory
         data = joinpath(dir, "data")
         if !isdir(data)
             data = dir
         end
 
-        firstfile = true
+        processed_commits = String[]
         for file in readdir(data)
             if !endswith(file, ".json") || !contains(file, r".(minimum|median|mean).json")
                 continue
@@ -37,73 +44,66 @@ function process_benchmark_archive!(df, path, artifact_id, db, benchmark_to_psta
                 primary_metric = "min"
             end
 
-            group = BenchmarkTools.load(joinpath(data, file))[1]
-            return_group_only && return group
+            artifact_id = nothing
 
-            # Sometimes the same commit is benchmarked multiple times, so we store the most recent data
-            if firstfile
-                artifact_row = create_artifact_row(path, file, artifact_id)
+            # Sometimes the same commit is benchmarked multiple times, we just keep the original data
+            if !return_group_only
+                artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(get_sha(file))' LIMIT 1") |> DataFrame
 
-                artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(artifact_row.name)' LIMIT 1") |> DataFrame
+                if get_sha(file) ∉ processed_commits
+                    if !isempty(artifact_query)
+                        continue
+                        # TODO: Just overwrite data we also have results for not all data
+                        # DBInterface.execute(db, "DELETE FROM pstat WHERE aid=$aid")
+                        # artifact_query[1, "id"]
+                    end
 
-                if isempty(artifact_query)
-                    # artifact_row = (id=artifact_id, name=commit_sha, date=date, type="master")
+                    artifact_row = create_artifact_row(path, file, next_artifact_id[])
+                    artifact_id = artifact_row.id
+                    next_artifact_id[] += 1
+
                     DBInterface.execute(db, "INSERT INTO artifact (id, name, date, type) VALUES ($(artifact_row.id), '$(artifact_row.name)', $(artifact_row.date), '$(artifact_row.type)')")
                 else
-                    if false # changed date to be time of commit so this check: artifact_row.date > artifact_query[1, "date"], no longer is useful
-                        DBInterface.execute(db, "UPDATE artifact SET date=$(artifact_row.date) WHERE name='$(artifact_row.name)'")
-
-                        aid = artifact_query[1, "id"]
-                        DBInterface.execute(db, "DELETE FROM pstat WHERE aid=$aid")
-                    else
-                        return
-                    end
+                    artifact_id = artifact_query[1, "id"]
                 end
             end
+
+            group = BenchmarkTools.load(joinpath(data, file))[1]
+            return_group_only && return group
 
             benchmark_data = rec_flatten_benchmarkgroup(group)
 
             for (benchmark_name, trial) in benchmark_data
-                # benchmark_query = DBInterface.execute(db, "SELECT stabilized FROM benchmark WHERE name=$benchmark_name LIMIT 1") |> DataFrame
-                # if isempty(benchmark_query)
-                #     # benchmark_row = (name=benchmark_name, stabilized=0, category="primary")
-                #     DBInterface.execute(db, "INSERT INTO benchmark (name, stabilized, category) VALUES ($benchmark_name, 0, 'primary')")
-                # end
-
-                if firstfile # get alloc and memory data, same for all files
+                if get_sha(file) ∉ processed_commits # get alloc and memory data, same for all files
                     for metric in (:allocs, :memory) # allocs is num of allocations, memory is in bytes
-                        push_metric_to_pstat!(df, benchmark_name, string(metric), artifact_id, getfield(trial, metric), benchmark_to_pstat_series_id)
+                        push_metric_to_pstat!(df, db, benchmark_name, string(metric), artifact_id, getfield(trial, metric), benchmark_to_pstat_series_id)
                     end
                 end
 
-                push_metric_to_pstat!(df, benchmark_name, primary_metric * "-wall-time", artifact_id, trial.time, benchmark_to_pstat_series_id)
-                push_metric_to_pstat!(df, benchmark_name, primary_metric * "-gc-time", artifact_id, trial.gctime, benchmark_to_pstat_series_id)
+                push_metric_to_pstat!(df, db, benchmark_name, primary_metric * "-wall-time", artifact_id, trial.time, benchmark_to_pstat_series_id)
+                push_metric_to_pstat!(df, db, benchmark_name, primary_metric * "-gc-time", artifact_id, trial.gctime, benchmark_to_pstat_series_id)
             end
 
-            firstfile = false
+            if get_sha(file) ∉ processed_commits
+                push!(processed_commits, get_sha(file))
+            end
         end
     end
 end
 
-function push_metric_to_pstat!(df::DataFrame, benchmark_name::String, metric::String, aid::Int64, value, benchmark_to_pstat_series_id)
-    # series_id_idx = findfirst(i->benchmark_names_column[i] == benchmark_name && metrics_column[i] == metric, 1:length(benchmark_names_column))
-    # series_id = pstat_series_id_column[series_id_idx]
-    series_id = benchmark_to_pstat_series_id[(benchmark_name, metric)]
+function push_metric_to_pstat!(df::DataFrame, db::SQLite.DB, benchmark_name::String, metric::String, aid::Int64, value, benchmark_to_pstat_series_id)
+    if !haskey(benchmark_to_pstat_series_id, (benchmark_name, metric))
+        pstat_series_query = DBInterface.execute(db, "SELECT * FROM pstat_series ORDER BY id DESC LIMIT 1") |> DataFrame
+        next_pid = 1 + pstat_series_query[1, "id"]
 
-    # series_id_query = DBInterface.execute(db, "SELECT id FROM pstat_series WHERE crate=$benchmark_name AND metric=$metric LIMIT 1") |> DataFrame
-    # series_id = nothing
-    # if isempty(series_id_query)
-    #     # pstat_series_row = (id=pid, crate=benchmark_name, profile="opt", scenario="full", backend="llvm", metric=metric)
-    #     DBInterface.execute(db, "INSERT INTO pstat_series (id, crate, profile, scenario, backend, metric) VALUES ($(pstat_series_next_id[]), $benchmark_name, 'opt', 'full', 'llvm', $metric)")
-    #     series_id = pstat_series_next_id[]
-    #     pstat_series_next_id[] += 1
-    # else
-    #     series_id = series_id_query[1, "id"]
-    # end
+        temp_df = DataFrame(id=next_pid, crate=benchmark_name, profile="opt", scenario="full", backend="llvm", metric=metric)
+        SQLite.load!(temp_df, db, "pstat_series")
+        benchmark_to_pstat_series_id[(benchmark_name, metric)] = next_pid
+    end
+    series_id = benchmark_to_pstat_series_id[(benchmark_name, metric)]
 
     pstat_row = (series=series_id, aid=aid, cid=0, value=Float64(value))
     push!(df, pstat_row)
-    # DBInterface.execute(db, "INSERT INTO pstat (series, aid, cid, value) VALUES ($series_id, $aid, 0, $(Float64(value)))")
 end
 
 function create_pstat_rows(series_id, aid, val)
@@ -111,11 +111,30 @@ function create_pstat_rows(series_id, aid, val)
     DataFrame(series=series_id, aid=fill(aid, len), cid=fill(0, len), value=val)
 end
 
+get_sha(file) = split(file, '_')[1]
 function create_artifact_row(path, file, id)
-    commit_sha = split(file, '_')[1]
-    commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$commit_sha").body |> JSON3.read
-    date = DateTime(commit_details.author.date, "yyyy-mm-ddTHH:MM:SSZ") |> datetime2unix |> Int64
-    (id=id, name=commit_sha, date=date, type="master")
+    commit_sha = get_sha(file)
+
+    date = nothing
+    kind = nothing
+
+    search_on_master = HTTP.get("https://api.github.com/search/commits?q=repo:JuliaLang/julia+hash:$commit_sha").body |> JSON3.read
+
+    if search_on_master.total_count == 0 # commit not in master branch
+        commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$commit_sha").body |> JSON3.read
+        date = DateTime(commit_details.author.date, dateformat"yyyy-mm-ddTHH:MM:SS\Z") |> datetime2unix |> Int64
+        kind = "try"
+    elseif search_on_master.total_count == 1
+        @assert search_on_master.items[1].sha == commit_sha
+        date = DateTime(ZonedDateTime(search_on_master.items[1].commit.author.date), UTC) |> datetime2unix |> Int64
+        kind = "master"
+    else
+        println("Commit: $commit_sha")
+        display(search_on_master)
+        error("Found too many commits")
+    end
+
+    (id=id, name=commit_sha, date=date, type=kind)
 end
 
 function rec_flatten_benchmarkgroup(d)
@@ -155,11 +174,11 @@ function create_pstat_series(benchmark_table)
     return df
 end
 
-function process_benchmarks(dir, )
+function process_benchmarks(dir)
     db = SQLite.DB("julia.db")
 
     artifact_id_query = DBInterface.execute(db, "SELECT id FROM artifact ORDER BY id DESC LIMIT 1") |> DataFrame
-    artifact_id = isempty(artifact_id_query) ? 1 : artifact_id_query[1, "id"]+1
+    next_artifact_id = Ref{Int}((isempty(artifact_id_query) ? 0 : artifact_id_query[1, "id"]) + 1)
 
     pstat_series_table = DBInterface.execute(db, "SELECT * FROM pstat_series") |> DataFrame
     # need to tranform into vector as indexing into df extremely slow
@@ -176,9 +195,7 @@ function process_benchmarks(dir, )
         pstat_df = DataFrame()
         for file in files
             if contains(file, r"^data.tar.\w+$")
-                process_benchmark_archive!(pstat_df, joinpath(root, file), artifact_id, db, benchmark_to_pstat_series_id)
-
-                artifact_id += 1
+                process_benchmark_archive!(pstat_df, joinpath(root, file), next_artifact_id, db, benchmark_to_pstat_series_id)
             end
         end
         if !isempty(pstat_df)
@@ -210,6 +227,9 @@ end
 
 function main(month=lpad(month(now()), 2, '0'), year=year(now()))
     process_benchmarks("/home/rag/Documents/Code/NanosoldierReports/benchmark/by_date/$year-$month")
+    # for dir in filter(isdir, readdir("/home/rag/Documents/Code/NanosoldierReports/benchmark/by_hash/", join=true))
+    #     process_benchmarks(dir)
+    # end
 end
 
 function create_tables()
