@@ -130,7 +130,7 @@ loadGraphData(selector, loading);
     @change="updateSelection"
   ></DataSelector>
   <div>
-    See <a href="/compare.html">compare page</a> for descriptions of what the
+    See <a href="/">compare page</a> for descriptions of what the
     names mean.
   </div>
   <div>
