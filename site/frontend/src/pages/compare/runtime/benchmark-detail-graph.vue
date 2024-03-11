@@ -25,7 +25,7 @@ const props = defineProps<{
 }>();
 
 // How many days are shown in the graph
-const DAY_RANGE = 30;
+const DAY_RANGE = 60;
 
 function createGraphsSelector(): RuntimeDetailGraphsSelector {
   const {start, end} = graphRange.value;
