@@ -620,9 +620,9 @@ async fn handle_fs_path(req: &Request, path: &str) -> Option<http::Response<hype
 
     let relative_path = path.trim_start_matches('/');
     let source = match path {
-        "" | "/" | "/index.html" => resolve_template("graphs.html").await,
+        "" | "/" | "/index.html" | "/compare.html" => resolve_template("compare.html").await,
         "/bootstrap.html"
-        | "/compare.html"
+        | "/graphs.html"
         | "/dashboard.html"
         | "/detailed-query.html"
         | "/help.html"
