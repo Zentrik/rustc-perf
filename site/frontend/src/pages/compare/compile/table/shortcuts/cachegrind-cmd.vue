@@ -91,7 +91,7 @@ function normalizeBenchmark(benchmark: string): string {
 <template>
   <pre><code>using BaseBenchmarks
 BaseBenchmarks.load!("{{ getsuite(testCase.benchmark) }}")
-run(BaseBenchmarks.SUITE[[{{ normalizeBenchmark(testCase.benchmark) }}]])</code></pre>
+res = run(BaseBenchmarks.SUITE[[{{ normalizeBenchmark(testCase.benchmark) }}]])</code></pre>
 </template>
 
 <style scoped lang="scss">
