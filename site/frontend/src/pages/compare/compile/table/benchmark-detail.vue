@@ -263,7 +263,7 @@ function graphLink(
   const start = formatDate(getPastDate(new Date(commit.date), 30));
   const end = commit.commit;
   const {benchmark, profile, scenario} = testCase;
-  return `/index.html?start=${start}&end=${end}&benchmark=${benchmark}&profile=${profile}&scenario=${scenario}&stat=${metric}`;
+  return `/graphs.html?start=${start}&end=${end}&benchmark=${benchmark}&profile=${profile}&scenario=${scenario}&stat=${metric}`;
 }
 
 const metadata = computed(
