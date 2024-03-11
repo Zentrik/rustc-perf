@@ -264,7 +264,7 @@ impl SiteCtxt {
             .collect()
     }
 
-    /// Get cached master-branch Rust commits.  
+    /// Get cached master-branch Rust commits.
     /// Returns cached results immediately, but if the cached value is older than one minute,
     /// updates in a background task for next time.
     pub fn get_master_commits(&self) -> Guard<Arc<MasterCommitCache>> {
