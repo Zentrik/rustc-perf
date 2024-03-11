@@ -160,45 +160,12 @@ onMounted(() => {
       :artifact="artifact"
       :base-artifact="baseArtifact"
     />
-    <div class="columns" v-if="props.metric !== BINARY_SIZE_METRIC">
-      <div class="rows center-items grow">
-        <div class="title bold">
-          Sections
-          <Tooltip
-            >Percentual duration of individual compilation sections. This is a
-            rough estimate that might not necessarily contain all of the
-            individual parts of the compilation. The sections are calculated
-            based on the results of self-profile queries and they are measured
-            based on wall-time.
-          </Tooltip>
-        </div>
-        <div style="font-size: 0.8em">
-          Note that the data for this chart is calculated from wall-time (it is
-          metric agnostic)!
-        </div>
-        <div>
-          <CompileSectionsChart
-            v-if="
-              (sectionsDetail?.before ?? null) !== null &&
-              (sectionsDetail?.after ?? null) !== null
-            "
-            :before="sectionsDetail.before"
-            :after="sectionsDetail.after"
-          />
-          <span v-else-if="sectionsDetail === null">Loading…</span>
-          <span v-else>Not available</span>
-        </div>
-      </div>
-    </div>
     <div class="shortcut">
-      <template v-if="props.metric === BINARY_SIZE_METRIC">
-        <BinarySizeShortcut
-          v-if="testCase.profile === 'debug' || testCase.profile === 'opt'"
+      <ProfileShortcut
           :artifact="props.artifact"
           :base-artifact="props.baseArtifact"
           :test-case="props.testCase"
         />
-      </template>
     </div>
   </div>
 </template>
