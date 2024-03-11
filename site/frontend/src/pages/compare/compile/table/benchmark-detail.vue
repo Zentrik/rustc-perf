@@ -14,11 +14,9 @@ import {
   CompileDetailSections,
   CompileDetailSectionsSelector,
 } from "./detail-resolver";
-import CompileSectionsChart from "./sections-chart.vue";
-import PerfettoLink from "../../../../components/perfetto-link.vue";
 import ProfileShortcut from "./shortcuts/profile-shortcut.vue";
-import BinarySizeShortcut from "./shortcuts/binary-size-shortcut.vue";
 import BenchmarkDetailGraph from "./benchmark-detail-graph.vue";
+import DAY_RANGE from "./benchmark-detail-graph.vue";
 
 const props = defineProps<{
   testCase: CompileTestCase;
@@ -66,7 +64,7 @@ function graphLink(
   testCase: CompileTestCase
 ): string {
   // Move to `30 days ago` to display history of the test case
-  const start = formatDate(getPastDate(new Date(commit.date), 30));
+  const start = formatDate(getPastDate(new Date(commit.date), 2*DAY_RANGE));
   const end = commit.commit;
   const {benchmark, profile, scenario} = testCase;
   return `/graphs.html?start=${start}&end=${end}&benchmark=${benchmark}&profile=${profile}&scenario=${scenario}&stat=${metric}`;
