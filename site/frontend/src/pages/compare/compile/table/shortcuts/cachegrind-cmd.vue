@@ -118,24 +118,4 @@ pre {
   white-space: pre-wrap;       /* Since CSS 2.1 */
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
-
-/* https://codersblock.com/blog/using-css-to-control-text-selection/
-Causes flickering
-
-code {
-  -webkit-user-select: all;
-  user-select: all;
-}
-
-code:focus {
-  animation: select 100ms step-end forwards;
-}
-
-@keyframes select {
-  to {
-    -webkit-user-select: text;
-    user-select: text;
-  }
-}
-*/
 </style>
