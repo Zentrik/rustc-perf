@@ -225,7 +225,7 @@ function process_benchmarks(dir)
     nothing
 end
 
-function main(month=lpad(month(now()), 2, '0'), year=year(now()))
+function auto_load(month=lpad(month(now()), 2, '0'), year=year(now()))
     process_benchmarks("/home/rag/Documents/Code/NanosoldierReports/benchmark/by_date/$year-$month")
     # for dir in filter(isdir, readdir("/home/rag/Documents/Code/NanosoldierReports/benchmark/by_hash/", join=true))
     #     process_benchmarks(dir)
