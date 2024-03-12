@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 
-pub const RUST_REPO_GITHUB_API_URL: &str = "https://api.github.com/repos/rust-lang/rust";
+pub const RUST_REPO_GITHUB_API_URL: &str = "https://api.github.com/repos/JuliaLang/julia";
 
 /// Comments that are temporary and do not add any value once there has been a new development
 /// (a rustc build or a perf. run was finished) are marked with this comment.
@@ -31,7 +31,7 @@ pub async fn unroll_rollup(
     previous_master: &str,
     rollup_pr_number: u32,
 ) -> Result<(), String> {
-    let commit_link = |sha: &str| format!("https://github.com/rust-lang-ci/rust/commit/{sha}");
+    let commit_link = |sha: &str| format!("https://github.com/JuliaLang/julia/commit/{sha}");
 
     let format_commit = |s: &str, truncate: bool| {
         let display = truncate.then(|| s.split_at(10).0).unwrap_or(s);
@@ -412,7 +412,7 @@ pub(crate) async fn untriaged_perf_regressions() -> Result<Vec<PullRequest>, Box
 
 /// Get the title of a PR with the given number
 pub(crate) async fn pr_title(pr: u32) -> String {
-    let url = format!("https://api.github.com/repos/rust-lang/rust/pulls/{}", pr);
+    let url = format!("https://api.github.com/repos/JuliaLang/julia/pulls/{}", pr);
     let request = github_request(&url);
 
     async fn send(request: reqwest::RequestBuilder) -> Result<String, BoxedError> {
