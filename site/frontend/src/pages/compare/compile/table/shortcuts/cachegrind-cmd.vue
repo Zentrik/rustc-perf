@@ -65,9 +65,9 @@ function normalizeBenchmark(benchmark: string): string {
       let split_tuple = [];
 
       while (end_idx < benchmark.length-1) {
-        if (benchmark[end_idx] == "\{") {
+        if (benchmark[end_idx] == "\{" || benchmark[end_idx] == "\(") {
           braces += 1;
-        } else if (benchmark[end_idx] == "\}") {
+        } else if (benchmark[end_idx] == "\}" || benchmark[end_idx] == "\)") {
           braces -= 1;
         } else if (benchmark[end_idx] == "," && braces == 0) {
           split_tuple.push(benchmark.slice(start_idx, end_idx));
