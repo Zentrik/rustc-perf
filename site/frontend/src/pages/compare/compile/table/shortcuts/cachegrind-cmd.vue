@@ -5,6 +5,7 @@
 
 import {CompileTestCase} from "../../common";
 import {computed} from "vue";
+import {onMounted} from 'vue';
 import {normalizeProfile} from "./utils";
 
 const props = defineProps<{
@@ -86,10 +87,24 @@ function normalizeBenchmark(benchmark: string): string {
       return parts.concat(stringified_tuple).join(", ");
   }
 }
+
+onMounted(() => {
+  const codeBlocks = document.querySelectorAll('code');
+  codeBlocks.forEach((codeBlock) => {
+    codeBlock.addEventListener('click', (event) => {
+      if (window.getSelection().toString() === '') {
+        const range = document.createRange();
+        range.selectNodeContents(codeBlock);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+      }
+    });
+  });
+});
 </script>
 
 <template>
-  <pre><code>using BaseBenchmarks
+  <pre><code tabindex="0">using BaseBenchmarks
 BaseBenchmarks.load!("{{ getsuite(testCase.benchmark) }}")
 res = run(BaseBenchmarks.SUITE[[{{ normalizeBenchmark(testCase.benchmark) }}]])</code></pre>
 </template>
@@ -97,15 +112,30 @@ res = run(BaseBenchmarks.SUITE[[{{ normalizeBenchmark(testCase.benchmark) }}]])<
 <style scoped lang="scss">
 pre {
   background-color: #eeeeee;
-  padding: 5px;
-  padding-bottom: 10px;
-  padding-left: 10px;
+  padding: 10px;
+  padding-left: 15px;
   border-radius: 10px;         /* Rounded corners */
   white-space: pre-wrap;       /* Since CSS 2.1 */
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
 
+/* https://codersblock.com/blog/using-css-to-control-text-selection/
+Causes flickering
+
 code {
-  /* user-select: all; */
+  -webkit-user-select: all;
+  user-select: all;
 }
+
+code:focus {
+  animation: select 100ms step-end forwards;
+}
+
+@keyframes select {
+  to {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+*/
 </style>
