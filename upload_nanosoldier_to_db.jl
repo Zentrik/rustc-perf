@@ -81,13 +81,24 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     if !isnothing(min_created_date)
                         pr_num = pr_details[mini].number
                         DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date, include) VALUES ('$sha', $pr_num, '$parent_sha', $(artifact_row.date), '$tag_predicate')")
-                    elseif artifact_row.type == "try"
-                        triggered_by_pr = match(r"\*Triggered By:\* \[link\]\(https://github.com/JuliaLang/julia/pull/(\d+)", report_file).captures[1] |> x->parse(Int, x)
-                        println("Commit $sha has no PR using triggered by pr $triggered_by_pr instead")
-                        DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date, include) VALUES ('$sha', $triggered_by_pr, '$parent_sha', $(artifact_row.date), '$tag_predicate')")
                     else
-                        println("Commit $sha has no PR")
-                        DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, parent_sha, commit_date, include) VALUES ('$sha', '$parent_sha', $(artifact_row.date), '$tag_predicate')")
+                        regex_match = nothing
+                        if artifact_row.type == "try"
+                            regex_match = match(r"\*Triggered By:\* \[link\]\(https://github.com/JuliaLang/julia/pull/(\d+)", report_file)
+                        end
+
+                        if !isnothing(regex_match)
+                            triggered_by_pr = regex_match.captures[1] |> x->parse(Int, x)
+                            println("Commit $sha has no PR using triggered by pr $triggered_by_pr instead")
+                            DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date, include) VALUES ('$sha', $triggered_by_pr, '$parent_sha', $(artifact_row.date), '$tag_predicate')")
+                        else
+                            if artifact_row.type == "try"
+                                printstyled("Commit $sha is a try build but was not triggered in a PR\n", color=:red)
+                            else
+                                printstyled("Commit $sha has no PR\n", color=:red)
+                            end
+                            DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, parent_sha, commit_date, include) VALUES ('$sha', '$parent_sha', $(artifact_row.date), '$tag_predicate')")
+                        end
                     end
 
                     artifact_id = artifact_row.id
