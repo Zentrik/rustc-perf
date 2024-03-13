@@ -35,8 +35,6 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
         end
 
         processed_commits = String[]
-        # pr_sha = nothing
-        # compared_to_sha = nothing
 
         for file in readdir(data)
             if !endswith(file, ".json") || !contains(file, r".(minimum|median|mean).json")
@@ -63,11 +61,6 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     end
 
                     artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
-                    # if artifact_row.kind == "try"
-                    #     pr_sha = sha
-                    # elseif artifact_row.kind == "master"
-                    #     compared_to_sha = sha
-                    # end
 
                     pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls").body |> JSON3.read
                     if !isempty(pr_details)
@@ -119,19 +112,6 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                 push!(processed_commits, sha)
             end
         end
-
-        # if !isnothing(pr_sha)
-        #     @assert !isnothing(compared_to_sha)
-        #     pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$pr_sha/pulls").body |> JSON3.read
-        #     pr_num = pr_details[1].number
-        #     DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha) VALUES ('$pr_sha', $pr_num, '$compared_to_sha')")
-        # else
-        #     pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$compared_to_sha/pulls").body |> JSON3.read
-        #     if !isempty(pr_details) && haskey(pr_details[1], :number)
-        #         pr_num = pr_details[1].number
-        #         DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha) VALUES ('$compared_to_sha', $pr_num, '')")
-        #     end
-        # end
     end
 end
 
