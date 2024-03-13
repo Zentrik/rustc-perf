@@ -503,15 +503,17 @@ export function renderPlots(
       let indices =
         cacheStates[Object.keys(cacheStates)[0]].interpolated_indices;
 
+      plotData = plotData.map((x) => x.filter((_, i) => !indices.has(i)))
+
       let plotOpts = genPlotOpts({
         width,
         height: 300,
         yAxisLabel,
         series: seriesOpts,
-        commits: data.commits,
+        commits: data.commits.filter((_, i) => !indices.has(i)),
         stat: selector.stat,
         isInterpolated(dataIdx) {
-          return indices.has(dataIdx);
+          return false;
         },
         absoluteMode: selector.kind == "raw",
         hooks,
