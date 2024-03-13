@@ -107,16 +107,16 @@ pub struct MasterCommitCache {
     pub updated: Instant,
 }
 
-impl MasterCommitCache {
-    /// Download the master-branch Rust commit list
-    pub async fn download() -> anyhow::Result<Self> {
-        let commits = collector::master_commits().await?;
-        Ok(Self {
-            commits,
-            updated: Instant::now(),
-        })
-    }
-}
+// impl MasterCommitCache {
+//     /// Download the master-branch Rust commit list
+//     pub async fn download() -> anyhow::Result<Self> {
+//         let commits = collector::master_commits().await?;
+//         Ok(Self {
+//             commits,
+//             updated: Instant::now(),
+//         })
+//     }
+// }
 
 // How many analyzed self profiles should be stored in memory
 const CACHED_SELF_PROFILE_COUNT: usize = 1000;
@@ -173,7 +173,30 @@ impl SiteCtxt {
             }
         };
 
-        let master_commits = MasterCommitCache::download().await?;
+        let mut all_master_commits = index.commits();
+        all_master_commits.retain(|commit| commit.is_master());
+        // We create a linked list of commits, where each commit points to the previous benchmark on master.
+        // We don't use the actual parent, as parent_sha is used to work out the previous/ next benchmarks.
+        // Especially necessary for signifance thresholds, as historical data uses previous commits to work out the significance threshold.
+        // Only place actually using the parent_sha is the is_contiguous fcn which now uses pull_request_build which has the correct parents
+        let linked_commits = all_master_commits.iter().rev()
+            .enumerate()
+            .map(|(i, commit)| MasterCommit{
+                sha : commit.sha.clone(),
+                parent_sha : if (all_master_commits.len()-i-1) > 0 {
+                    all_master_commits[(all_master_commits.len()-i-1)-1].sha.clone()
+                } else {
+                    String::new()
+                },
+                pr : None,
+                time : commit.date.0
+            })
+            .collect::<Vec<MasterCommit>>();
+
+        let master_commits = MasterCommitCache{commits: linked_commits, updated: Instant::now()};
+        // println!("{:?}", master_commits.commits.len());
+        // println!("{:?}", master_commits.commits[0]);
+        // println!("{:?}", master_commits.commits[1]);
 
         Ok(Self {
             config,
@@ -271,19 +294,19 @@ impl SiteCtxt {
     pub fn get_master_commits(&self) -> Guard<Arc<MasterCommitCache>> {
         let commits = self.master_commits.load();
 
-        if commits.updated.elapsed() > std::time::Duration::from_secs(60) {
-            let master_commits = self.master_commits.clone();
-            tokio::task::spawn(async move {
-                // if another update happens before this one is done, we will download the data twice, but that's it
-                match MasterCommitCache::download().await {
-                    Ok(commits) => master_commits.store(Arc::new(commits)),
-                    Err(e) => {
-                        // couldn't get the data, keep serving cached results for now
-                        error!("error retrieving master commit list: {}", e)
-                    }
-                }
-            });
-        }
+        // if commits.updated.elapsed() > std::time::Duration::from_secs(60) {
+        //     let master_commits = self.master_commits.clone();
+        //     tokio::task::spawn(async move {
+        //         // if another update happens before this one is done, we will download the data twice, but that's it
+        //         match MasterCommitCache::download().await {
+        //             Ok(commits) => master_commits.store(Arc::new(commits)),
+        //             Err(e) => {
+        //                 // couldn't get the data, keep serving cached results for now
+        //                 error!("error retrieving master commit list: {}", e)
+        //             }
+        //         }
+        //     });
+        // }
 
         commits
     }
