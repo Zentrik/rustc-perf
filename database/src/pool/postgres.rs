@@ -1195,6 +1195,20 @@ where
             .unwrap()
             .map(|r| r.get::<_, i32>(0) as u32)
     }
+
+    async fn tag_predicates(&self) -> HashMap<String, String> {
+        self.conn()
+            .query(
+                "select bors_sha, include from pull_request_build",
+                &[]
+            )
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|row| (row.get::<_, String>(0), row.get::<_, String>(1)))
+            .collect()
+    }
+
     async fn record_raw_self_profile(
         &self,
         collection: CollectionId,

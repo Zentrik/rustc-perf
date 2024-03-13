@@ -152,13 +152,15 @@ pub trait Connection: Send + Sync {
 
     /// Returns the sha of the parent commit, if available.
     ///
-    /// (Currently only works for try commits)
     async fn parent_of(&self, sha: &str) -> Option<String>;
 
     /// Returns the PR of the parent commit, if available.
     ///
-    /// (Currently only works for try commits)
     async fn pr_of(&self, sha: &str) -> Option<u32>;
+
+    /// Returns the tag predicate of the benchmark run, if available.
+    /// I.e. which benchmarks were run
+    async fn tag_predicates(&self) -> HashMap<String, String>;
 
     /// Returns the collection ids corresponding to the query. Usually just one.
     ///
