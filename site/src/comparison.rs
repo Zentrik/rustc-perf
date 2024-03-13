@@ -848,13 +848,23 @@ async fn compare_given_commits(
     master_commits: &[collector::MasterCommit],
 ) -> Result<Option<ArtifactComparison>, BoxedError> {
     let idx = ctxt.index.load();
-    let a = ctxt
+    let mut a = ctxt
         .artifact_id_for_bound(start.clone(), true)
         .ok_or(format!("could not find start commit for bound {:?}", start))?;
     let b = match ctxt.artifact_id_for_bound(end.clone(), false) {
         Some(b) => b,
         None => return Ok(None),
     };
+
+    if let ArtifactId::Commit(c) = b.clone() {
+        if matches!(start, Bound::None)  && c.is_try() {
+            let conn = ctxt.conn().await;
+            let parent_sha_opt = conn.parent_of(&c.sha).await;
+            if let Some(parent_sha) = parent_sha_opt {
+                a = ctxt.artifact_id_for_bound(Bound::Commit(parent_sha), true).unwrap_or(a);
+            }
+        }
+    }
     let aids = Arc::new(vec![a.clone(), b.clone()]);
 
     // get all crates, cache, and profile combinations for the given metric
