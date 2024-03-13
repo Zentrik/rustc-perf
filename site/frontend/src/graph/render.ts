@@ -520,15 +520,17 @@ export function renderPlots(
 
       let indices = scenarios[Object.keys(scenarios)[0]].interpolated_indices;
 
+      plotData = plotData.map((x) => x.filter((_, i) => !indices.has(i)))
+
       let plotOpts = genPlotOpts({
         width,
         height,
         yAxisLabel,
         series: seriesOpts,
-        commits: data.commits,
+        commits: data.commits.filter((_, i) => !indices.has(i)),
         stat: selector.stat,
         isInterpolated(dataIdx: number) {
-          return indices.has(dataIdx);
+          return false;
         },
         absoluteMode: selector.kind == "raw",
         hooks,
