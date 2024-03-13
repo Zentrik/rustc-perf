@@ -1,11 +1,12 @@
 # Important Tables
 
+These are the tables that we use, `upload_nanosoldier_to_db` should always have the most up-to-date list of tables if you can decipher the sphaghetti code.
+
 1 │ artifact
 3 │ pstat
 
 11 │ benchmark
-<!-- 12 │ runtime_pstat_series -->
-<!-- 13 │ runtime_pstat -->
+pull_request_build
 16 │ pstat_series
 
 # Schema
