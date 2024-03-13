@@ -47,7 +47,7 @@ type GraphRange = {
 };
 
 // How many days are shown in the graph
-const DAY_RANGE = 60;
+const DAY_RANGE = 30;
 
 /**
  * Calculates the start and end range for a history graph for this benchmark
