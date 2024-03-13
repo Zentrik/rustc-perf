@@ -954,25 +954,33 @@ async fn get_comparison<
 }
 
 fn previous_commits(
-    mut from: ArtifactId,
+    from: ArtifactId,
     n: usize,
     master_commits: &[collector::MasterCommit],
 ) -> Vec<ArtifactId> {
     let mut prevs = Vec::with_capacity(n);
-    while prevs.len() < n {
-        match prev_commit(&from, master_commits) {
-            Some(c) => {
-                let new = ArtifactId::Commit(database::Commit {
-                    sha: c.sha.clone(),
-                    date: database::Date(c.time),
-                    r#type: CommitType::Master,
-                });
-                from = new.clone();
-                prevs.push(new);
+
+    match from {
+        ArtifactId::Commit(c) => {
+            let mut end_date = c.date.0;
+            while prevs.len() < n {
+                let latest_prev_commit_opt = master_commits.iter().filter(|m| m.time < end_date).max_by_key(|m| m.time);
+                match latest_prev_commit_opt {
+                    Some(latest_prev_commit) => {
+                        prevs.push(ArtifactId::Commit(database::Commit {
+                            sha: latest_prev_commit.sha.clone(),
+                            date: database::Date(latest_prev_commit.time),
+                            r#type: CommitType::Master,
+                        }));
+                        end_date = latest_prev_commit.time;
+                    }
+                    None => break
+                }
             }
-            None => break,
         }
+        _ => {}
     }
+
     prevs
 }
 
