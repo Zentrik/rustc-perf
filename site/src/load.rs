@@ -174,7 +174,11 @@ impl SiteCtxt {
         };
 
         let mut all_master_commits = index.commits();
-        all_master_commits.retain(|commit| commit.is_master());
+        let sha_to_tag_predicate = conn.tag_predicates().await;
+        all_master_commits.retain(|commit| {
+            commit.is_master() &&
+            sha_to_tag_predicate[&commit.sha] == String::from("ALL")
+        });
         // We create a linked list of commits, where each commit points to the previous benchmark on master.
         // We don't use the actual parent, as parent_sha is used to work out the previous/ next benchmarks.
         // Especially necessary for signifance thresholds, as historical data uses previous commits to work out the significance threshold.
@@ -194,7 +198,7 @@ impl SiteCtxt {
             .collect::<Vec<MasterCommit>>();
 
         let master_commits = MasterCommitCache{commits: linked_commits, updated: Instant::now()};
-        // println!("{:?}", master_commits.commits.len());
+        println!("Loaded {:?} master commits", master_commits.commits.len());
         // println!("{:?}", master_commits.commits[0]);
         // println!("{:?}", master_commits.commits[1]);
 
