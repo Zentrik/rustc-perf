@@ -63,7 +63,12 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                         # artifact_query[1, "id"]
                     end
 
+                    # For a pr, we want parent_sha to be the commit it's compared to
                     artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
+                    if artifact_row.type == "try"
+                        commit_sha = filter(file-> endswith(file, ".json") && contains(file, r".(minimum|median|mean).json"), readdir(data)) .|> get_sha |> unique
+                        parent_sha = commit_sha[1] == sha ? commit_sha[2] : commit_sha[1]
+                    end
 
                     pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers=headers).body |> JSON3.read
 
@@ -167,7 +172,7 @@ function create_artifact_row(path, file, id)
         commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$commit_sha", headers=headers).body |> JSON3.read # can remove /git/ not sure why it's there
         date = DateTime(commit_details.author.date, dateformat"yyyy-mm-ddTHH:MM:SS\Z") |> datetime2unix |> Int64
         type = "try"
-        parent_sha = commit_details.parents[1].sha # How do you deal with multiple parents? Presumably we want the one on master
+        # parent_sha = commit_details.parents[1].sha # How do you deal with multiple parents? Presumably we want the one on master
     elseif search_on_master.total_count == 1
         # Occasionally the sha is incomplete, e.g. for 0b29986_vs_8dc69aa
         # We want to continue using the sha we get for the file, to make things easier
@@ -373,6 +378,43 @@ function add_commits_with_no_pr()
     end
 
     return pr_df
+end
+
+function fixup_parent_sha_and_pr_try_commits()
+    db = SQLite.DB("julia.db")
+    artifacts = DBInterface.execute(db, "SELECT name FROM artifact WHERE type='try'") |> DataFrame
+
+    root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_hash"
+    dirs = readdir(root_dir)
+    for sha in artifacts[!, "name"]
+        matching_dirs = findall(dir->dir[1:7] == sha[1:7] || dir[end-6:end] == sha[1:7], dirs)
+        if isempty(matching_dirs)
+            println("No matching dir for $sha")
+        elseif length(matching_dirs) > 1
+            println("Multiple matching dirs for $sha")
+        else
+            dir = dirs[matching_dirs[1]]
+            if dir == sha[1:7]
+                println("Dir is the same as sha for $sha")
+                continue
+            end
+            println("Processing $sha in $dir")
+            report_file = readuntil(joinpath(root_dir, dir, "report.md"), "## Results")
+            commit1 = match(r"\*Commit(?:s|\(s\)):\* \[[^/]+/julia@([^\]]+)\]", report_file).captures[1]
+            commit2 = match(r" vs \[[A-Za-z]+/julia@([^\]]+)\]", report_file).captures[1]
+            parent_sha = commit1 == sha ? commit2 : commit1
+
+            regex_match = match(r"\*Triggered By:\* \[link\]\(https://github.com/JuliaLang/julia/pull/(\d+)", report_file)
+
+            if !isnothing(regex_match)
+                triggered_by_pr = regex_match.captures[1] |> x->parse(Int, x)
+                DBInterface.execute(db, "UPDATE pull_request_build SET parent_sha='$parent_sha', pr=$triggered_by_pr WHERE bors_sha='$sha'") |> DataFrame
+            else
+                printstyled("Commit $sha is a try build but was not triggered in a PR\n", color=:red)
+                DBInterface.execute(db, "UPDATE pull_request_build SET parent_sha='$parent_sha' WHERE bors_sha='$sha'") |> DataFrame
+            end
+        end
+    end
 end
 
 function add_pr_nums()
