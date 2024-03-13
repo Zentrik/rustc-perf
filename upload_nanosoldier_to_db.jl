@@ -4,10 +4,12 @@ using DataFrames, Dates, TimeZones
 using SQLite
 using HTTP, JSON3
 
+const headers = nothing
+
 function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
     println("Processing $path...")
     mktempdir() do dir
-    # dir = mktempdir()
+    # dir = mktempdir() # Debugger is unable to step into the above line
         # extract
         open(path) do io
             stream = if endswith(path, ".xz")
@@ -24,9 +26,10 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
 
         # TODO: Support non full benchmark suites, to do need to address TODO about overwriting data conditionally
         report_file = readuntil(joinpath(splitpath(path)[1:end-1]..., "report.md"), "## Results")
-        if !return_group_only && !occursin("*Tag Predicate:* `ALL`", report_file)
-            return
-        end
+        tag_predicate = match(r"\*Tag Predicate:\* `(.*)`", report_file).captures[1]
+        # if !return_group_only && !occursin("*Tag Predicate:* `ALL`", report_file)
+        #     return
+        # end
 
         # strip the contained "data" directory
         data = joinpath(dir, "data")
@@ -53,7 +56,7 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                 artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(sha)' LIMIT 1") |> DataFrame
 
                 if sha ∉ processed_commits
-                    if !isempty(artifact_query)
+                    if !isempty(artifact_query) # all files for this commit should also hit continue so good
                         continue
                         # TODO: Just overwrite data we also have results for not all data
                         # DBInterface.execute(db, "DELETE FROM pstat WHERE aid=$aid")
@@ -62,25 +65,29 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
 
                     artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
 
-                    pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls").body |> JSON3.read
+                    pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers=headers).body |> JSON3.read
+
+                    min_created_date = nothing
+                    mini = 0
                     if !isempty(pr_details)
-                        mini = 0
-                        min_created_date = nothing
                         for i in eachindex(pr_details)
                             if isnothing(min_created_date) || DateTime(pr_details[i].created_at, dateformat"yyyy-mm-ddTHH:MM:SS\Z") < min_created_date
                                 min_created_date = DateTime(pr_details[i].created_at, dateformat"yyyy-mm-ddTHH:MM:SS\Z")
                                 mini = i
                             end
                         end
+                    end
 
-                        if !isnothing(min_created_date)
-                            pr_num = pr_details[mini].number
-                            DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date) VALUES ('$sha', $pr_num, '$parent_sha', $(artifact_row.date))")
-                        else
-                            println("Commit $sha has no PR")
-                        end
+                    if !isnothing(min_created_date)
+                        pr_num = pr_details[mini].number
+                        DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date, include) VALUES ('$sha', $pr_num, '$parent_sha', $(artifact_row.date), '$tag_predicate')")
+                    elseif artifact_row.type == "try"
+                        triggered_by_pr = match(r"\*Triggered By:\* \[link\]\(https://github.com/JuliaLang/julia/pull/(\d+)", report_file).captures[1] |> x->parse(Int, x)
+                        println("Commit $sha has no PR using triggered by pr $triggered_by_pr instead")
+                        DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date, include) VALUES ('$sha', $triggered_by_pr, '$parent_sha', $(artifact_row.date), '$tag_predicate')")
                     else
                         println("Commit $sha has no PR")
+                        DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, parent_sha, commit_date, include) VALUES ('$sha', '$parent_sha', $(artifact_row.date), '$tag_predicate')")
                     end
 
                     artifact_id = artifact_row.id
@@ -140,20 +147,25 @@ function create_artifact_row(path, file, id)
     commit_sha = get_sha(file)
 
     date = nothing
-    kind = nothing
+    type = nothing
     parent_sha = nothing
 
-    search_on_master = HTTP.get("https://api.github.com/search/commits?q=repo:JuliaLang/julia+hash:$commit_sha").body |> JSON3.read
+    search_on_master = HTTP.get("https://api.github.com/search/commits?q=repo:JuliaLang/julia+hash:$commit_sha", headers=headers).body |> JSON3.read
 
     if search_on_master.total_count == 0 # commit not in master branch
-        commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$commit_sha").body |> JSON3.read # can remove /git/ not sure why it's there
+        commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$commit_sha", headers=headers).body |> JSON3.read # can remove /git/ not sure why it's there
         date = DateTime(commit_details.author.date, dateformat"yyyy-mm-ddTHH:MM:SS\Z") |> datetime2unix |> Int64
-        kind = "try"
+        type = "try"
         parent_sha = commit_details.parents[1].sha # How do you deal with multiple parents? Presumably we want the one on master
     elseif search_on_master.total_count == 1
-        @assert search_on_master.items[1].sha == commit_sha
+        # Occasionally the sha is incomplete, e.g. for 0b29986_vs_8dc69aa
+        # We want to continue using the sha we get for the file, to make things easier
+        # E.g. if we run this commit again we want to know the sha when we query artifacts and not require api call
+        if search_on_master.items[1].sha != commit_sha
+            printstyled("Commit: $commit_sha has different sha on search $(search_on_master.items[1].sha)\n", color=:red)
+        end
         date = DateTime(ZonedDateTime(search_on_master.items[1].commit.author.date), UTC) |> datetime2unix |> Int64
-        kind = "master"
+        type = "master"
         parent_sha = search_on_master.items[1].parents[1].sha
     else
         println("Commit: $commit_sha")
@@ -161,7 +173,7 @@ function create_artifact_row(path, file, id)
         error("Found too many commits")
     end
 
-    (id=id, name=commit_sha, date=date, type=kind), parent_sha
+    (id=id, name=commit_sha, date=date, type=type), parent_sha
 end
 
 function rec_flatten_benchmarkgroup(d)
@@ -325,6 +337,32 @@ function fix_dates()
     artifacts_table |> SQLite.load!(db, "artifact")
 end
 
+function add_old_by_hash_benchmarks()
+    nanosoldier_dir = joinpath(@__DIR__, "..", "NanosoldierReports")
+    # repo = LibGit2.GitRepo(nanosoldier_dir)
+
+    # Many commits are unique, so just process any benchmark of theirs instead of trying to sort benchmarks by date, which seems hard
+    # We've already processed the `ALL`s so we defo have those.
+    # dirs = vcat((readdir(".") .|> x->split(x, "_vs_"))...)
+
+    for dir in filter(isdir, readdir(joinpath(nanosoldier_dir, "benchmark", "by_hash/"), join=true))
+        process_benchmarks(dir)
+    end
+end
+
+function add_commits_with_no_pr()
+    db = SQLite.DB("julia.db")
+    artifacts = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
+    pr_df = DataFrame()
+    commits_to_process = DBInterface.execute(db, "SELECT name FROM artifact WHERE name NOT IN (SELECT bors_sha FROM pull_request_build)") |> DataFrame
+
+    for sha in commits_to_process[!, "name"]
+        push!(pr_df, (bors_sha=sha, pr=missing, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
+    end
+
+    return pr_df
+end
+
 function add_pr_nums()
     db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
@@ -333,18 +371,19 @@ function add_pr_nums()
     for row in eachrow(artifacts)
         if row["type"] == "master"
             sha = row["name"]
-            pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers= ["Authorization" => "Bearer secret"]).body |> JSON3.read
+            pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers=headers).body |> JSON3.read
             if !isempty(pr_details) && haskey(pr_details[1], :number)
                 pr_num = pr_details[1].number
-                push!(pr_df, (bors_sha = sha, pr = pr_num, parent_sha="", exclude=missing, complete=missing, runs=missing, include=missing, commit_date=missing, requested=missing))
+                push!(pr_df, (bors_sha = sha, pr = pr_num, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
                 # DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr) VALUES ('$sha', $pr_num)")
             else
                 println("Commit $sha has no PR")
+                push!(pr_df, (bors_sha = sha, pr = missing, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
             end
         else
             # Doesn't really work due to force pushes I think, e.g. https://github.com/JuliaLang/julia/commit/4ff1f007974a4ea1d89e636d8feed83723bbb779 has no pr
             sha = row["name"]
-            pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers= ["Authorization" => "Bearer secret"]).body |> JSON3.read
+            pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers=headers).body |> JSON3.read
             if !isempty(pr_details)
                 mini = 0
                 min_created_date = nothing
@@ -361,10 +400,11 @@ function add_pr_nums()
                 date = DateTime(commit_details.author.date, dateformat"yyyy-mm-ddTHH:MM:SS\Z") |> datetime2unix |> Int64
                 parent_sha = commit_details.parents[1].sha # How do you deal with multiple parents? Presumably we want the one on master
 
-                push!(pr_df, (bors_sha=sha, pr=pr_num, parent_sha=parent_sha, exclude=missing, complete=missing, runs=missing, include=missing, commit_date=date, requested=missing))
+                push!(pr_df, (bors_sha=sha, pr=pr_num, parent_sha=parent_sha, exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=date, requested=missing))
                 # DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date) VALUES ('$sha', $pr_num, '$parent_sha', $(artifact_row.date))")
             else
                 println("Commit $sha has no PR")
+                push!(pr_df, (bors_sha=sha, pr=missing, parent_sha=parent_sha, exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=date, requested=missing))
             end
         end
     end
