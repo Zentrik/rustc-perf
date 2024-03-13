@@ -21,8 +21,8 @@ async fn main() {
         .ok()
         .or_else(|| env::args().nth(1))
         .unwrap_or_else(|| {
-            eprintln!("Defaulting to loading from `results.db`");
-            String::from("results.db")
+            eprintln!("Defaulting to loading from `julia.db`");
+            String::from("julia.db")
         });
     let port = env::var("PORT")
         .ok()
