@@ -26,7 +26,6 @@ const props = defineProps<{
   benchmarkMap: CompileBenchmarkMap;
 }>();
 
-const BINARY_SIZE_METRIC: string = "size:linked_artifact";
 
 function createSectionsSelector(): CompileDetailSectionsSelector {
   return {
