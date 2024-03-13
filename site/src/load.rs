@@ -148,11 +148,11 @@ impl SiteCtxt {
     }
 
     pub fn artifact_id_for_bound(&self, query: Bound, is_left: bool) -> Option<ArtifactId> {
-        crate::selector::artifact_id_for_bound(&self.index.load(), query, is_left)
+        crate::selector::artifact_id_for_bound(&self.get_master_commits().commits, &self.index.load(), query, is_left)
     }
 
     pub fn data_range(&self, range: RangeInclusive<Bound>) -> Vec<Commit> {
-        crate::selector::range_subset(self.index.load().commits(), range)
+        crate::selector::range_subset(&self.get_master_commits().commits, self.index.load().commits(), range)
     }
 
     /// Initialize `SiteCtxt` from database url

@@ -224,6 +224,7 @@ function create_pstat_series(benchmark_table)
     return df
 end
 
+# TODO: Seperate out setup and processing
 function process_benchmarks(dir)
     db = SQLite.DB("julia.db")
 
