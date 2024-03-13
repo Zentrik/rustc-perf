@@ -1170,10 +1170,23 @@ impl Connection for SqliteConnection {
             .query_row(
                 "select pr from pull_request_build where bors_sha = ?",
                 params![sha],
-                |row| Ok(row.get(0).unwrap()),
+                |row| Ok(row.get::<_, Option<u32>>(0).unwrap()),
             )
             .optional()
             .unwrap()
+            .flatten()
+    }
+
+    async fn tag_predicates(&self) -> HashMap<String, String> {
+        self.raw_ref()
+            .prepare("select bors_sha, include from pull_request_build")
+            .unwrap()
+            .query_map(params![], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
     }
 
     async fn list_self_profile(

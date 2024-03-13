@@ -895,12 +895,8 @@ impl ArtifactDescription {
             })
             .collect::<HashMap<_, _>>();
 
-        let pr = if let ArtifactId::Commit(c) = &artifact {
-            if let Some(m) = master_commits.iter().find(|m| m.sha == c.sha) {
-                m.pr
-            } else {
-                conn.pr_of(&c.sha).await
-            }
+        let pr: Option<u32> = if let ArtifactId::Commit(c) = &artifact {
+            conn.pr_of(&c.sha).await
         } else {
             None
         };
