@@ -197,9 +197,7 @@ impl SiteCtxt {
             .collect::<Vec<MasterCommit>>();
 
         let master_commits = MasterCommitCache{commits: linked_commits, updated: Instant::now()};
-        println!("Loaded {:?} master commits", master_commits.commits.len());
-        // println!("{:?}", master_commits.commits[0]);
-        // println!("{:?}", master_commits.commits[1]);
+        eprintln!("Loaded {:?} master commits", master_commits.commits.len());
 
         Ok(Self {
             config,
