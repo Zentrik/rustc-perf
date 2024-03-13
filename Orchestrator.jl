@@ -39,6 +39,7 @@ function main()
             for benchmark_dir in readdir(joinpath(nanosoldier_dir, "benchmark", rel_dir), join=true)
                 if isdir(benchmark_dir) && now <= unix2datetime(mtime(joinpath(benchmark_dir, benchmark_dir)))
                     changed = true
+                    kill_server()
                     println("$(joinpath(rel_dir, benchmark_dir)) changed")
                     process_benchmarks(benchmark_dir)
                 end
@@ -46,7 +47,6 @@ function main()
         end
 
         if changed
-            kill_server()
             start_server()
         end
         sleep(sleep_time)
