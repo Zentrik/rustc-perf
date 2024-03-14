@@ -813,6 +813,7 @@ async fn get_comparison<
     let statistics_for_a = statistics_from_series(&mut responses);
     let statistics_for_b = statistics_from_series(&mut responses);
 
+    // TODO: would be nice if historical data was per perf series, so we don't ignore commits that weren't run on the whole benchmark suite.
     let mut historical_data =
         HistoricalDataMap::<Query>::calculate(ctxt, start_artifact, master_commits, query).await?;
     Ok(statistics_for_a
@@ -840,7 +841,7 @@ fn previous_commits(
     match from {
         ArtifactId::Commit(c) => {
             let mut end_date = c.date.0;
-            while prevs.len() < n {
+            while prevs.len() < n && c.date.0 - end_date <= chrono::Duration::days(30) {
                 let latest_prev_commit_opt = master_commits
                     .iter()
                     .filter(|m| m.time < end_date)
@@ -1057,7 +1058,7 @@ pub struct HistoricalDataMap<Query: BenchmarkQuery> {
 }
 
 impl<Query: BenchmarkQuery> HistoricalDataMap<Query> {
-    const NUM_PREVIOUS_COMMITS: usize = 0;
+    const NUM_PREVIOUS_COMMITS: usize = 5;
 
     async fn calculate(
         ctxt: &SiteCtxt,
