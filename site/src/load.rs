@@ -147,11 +147,20 @@ impl SiteCtxt {
     }
 
     pub fn artifact_id_for_bound(&self, query: Bound, is_left: bool) -> Option<ArtifactId> {
-        crate::selector::artifact_id_for_bound(&self.get_master_commits().commits, &self.index.load(), query, is_left)
+        crate::selector::artifact_id_for_bound(
+            &self.get_master_commits().commits,
+            &self.index.load(),
+            query,
+            is_left,
+        )
     }
 
     pub fn data_range(&self, range: RangeInclusive<Bound>) -> Vec<Commit> {
-        crate::selector::range_subset(&self.get_master_commits().commits, self.index.load().commits(), range)
+        crate::selector::range_subset(
+            &self.get_master_commits().commits,
+            self.index.load().commits(),
+            range,
+        )
     }
 
     /// Initialize `SiteCtxt` from database url
@@ -175,28 +184,34 @@ impl SiteCtxt {
         let mut all_master_commits = index.commits();
         let sha_to_tag_predicate = conn.tag_predicates().await;
         all_master_commits.retain(|commit| {
-            commit.is_master() &&
-            sha_to_tag_predicate[&commit.sha] == String::from("ALL")
+            commit.is_master() && sha_to_tag_predicate[&commit.sha] == String::from("ALL")
         });
         // We create a linked list of commits, where each commit points to the previous benchmark on master.
         // We don't use the actual parent, as parent_sha is used to work out the previous/ next benchmarks.
         // Especially necessary for signifance thresholds, as historical data uses previous commits to work out the significance threshold.
         // Only place actually using the parent_sha is the is_contiguous fcn which now uses pull_request_build which has the correct parents
-        let linked_commits = all_master_commits.iter().rev()
+        let linked_commits = all_master_commits
+            .iter()
+            .rev()
             .enumerate()
-            .map(|(i, commit)| MasterCommit{
-                sha : commit.sha.clone(),
-                parent_sha : if (all_master_commits.len()-i-1) > 0 {
-                    all_master_commits[(all_master_commits.len()-i-1)-1].sha.clone()
+            .map(|(i, commit)| MasterCommit {
+                sha: commit.sha.clone(),
+                parent_sha: if (all_master_commits.len() - i - 1) > 0 {
+                    all_master_commits[(all_master_commits.len() - i - 1) - 1]
+                        .sha
+                        .clone()
                 } else {
                     String::new()
                 },
-                pr : None,
-                time : commit.date.0
+                pr: None,
+                time: commit.date.0,
             })
             .collect::<Vec<MasterCommit>>();
 
-        let master_commits = MasterCommitCache{commits: linked_commits, updated: Instant::now()};
+        let master_commits = MasterCommitCache {
+            commits: linked_commits,
+            updated: Instant::now(),
+        };
         eprintln!("Loaded {:?} master commits", master_commits.commits.len());
 
         Ok(Self {

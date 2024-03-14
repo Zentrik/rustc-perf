@@ -46,11 +46,14 @@ impl Bound {
     pub fn left_match(&self, master_commits: &[MasterCommit], commit: &Commit) -> bool {
         match self {
             Bound::Commit(sha) => commit.sha == **sha,
-            Bound::Date(date) => master_commits.iter().any(|m| m.sha == commit.sha)
-                                            && commit.date.0.naive_utc().date() >= *date,
+            Bound::Date(date) => {
+                master_commits.iter().any(|m| m.sha == commit.sha)
+                    && commit.date.0.naive_utc().date() >= *date
+            }
             Bound::None => {
                 let last_month = chrono::Utc::now().date_naive() - chrono::Duration::days(30);
-                master_commits.iter().any(|m| m.sha == commit.sha) && last_month <= commit.date.0.naive_utc().date()
+                master_commits.iter().any(|m| m.sha == commit.sha)
+                    && last_month <= commit.date.0.naive_utc().date()
             }
         }
     }
@@ -59,7 +62,10 @@ impl Bound {
     pub fn right_match(&self, master_commits: &[MasterCommit], commit: &Commit) -> bool {
         match self {
             Bound::Commit(sha) => commit.sha == **sha,
-            Bound::Date(date) => master_commits.iter().any(|m| m.sha == commit.sha) && commit.date.0.date_naive() <= *date,
+            Bound::Date(date) => {
+                master_commits.iter().any(|m| m.sha == commit.sha)
+                    && commit.date.0.date_naive() <= *date
+            }
             Bound::None => master_commits.iter().any(|m| m.sha == commit.sha),
         }
     }

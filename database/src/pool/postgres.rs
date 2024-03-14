@@ -1214,10 +1214,7 @@ where
 
     async fn tag_predicates(&self) -> HashMap<String, String> {
         self.conn()
-            .query(
-                "select bors_sha, include from pull_request_build",
-                &[]
-            )
+            .query("select bors_sha, include from pull_request_build", &[])
             .await
             .unwrap()
             .into_iter()
