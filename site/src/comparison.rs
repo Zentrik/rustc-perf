@@ -963,28 +963,25 @@ fn previous_commits(
 ) -> Vec<ArtifactId> {
     let mut prevs = Vec::with_capacity(n);
 
-    match from {
-        ArtifactId::Commit(c) => {
-            let mut end_date = c.date.0;
-            while prevs.len() < n && c.date.0 - end_date <= chrono::Duration::days(30) {
-                let latest_prev_commit_opt = master_commits
-                    .iter()
-                    .filter(|m| m.time < end_date)
-                    .max_by_key(|m| m.time);
-                match latest_prev_commit_opt {
-                    Some(latest_prev_commit) => {
-                        prevs.push(ArtifactId::Commit(database::Commit {
-                            sha: latest_prev_commit.sha.clone(),
-                            date: database::Date(latest_prev_commit.time),
-                            r#type: CommitType::Master,
-                        }));
-                        end_date = latest_prev_commit.time;
-                    }
-                    None => break,
+    if let ArtifactId::Commit(c) = from {
+        let mut end_date = c.date.0;
+        while prevs.len() < n && c.date.0 - end_date <= chrono::Duration::days(30) {
+            let latest_prev_commit_opt = master_commits
+                .iter()
+                .filter(|m| m.time < end_date)
+                .max_by_key(|m| m.time);
+            match latest_prev_commit_opt {
+                Some(latest_prev_commit) => {
+                    prevs.push(ArtifactId::Commit(database::Commit {
+                        sha: latest_prev_commit.sha.clone(),
+                        date: database::Date(latest_prev_commit.time),
+                        r#type: CommitType::Master,
+                    }));
+                    end_date = latest_prev_commit.time;
                 }
+                None => break,
             }
         }
-        _ => {}
     }
 
     prevs
