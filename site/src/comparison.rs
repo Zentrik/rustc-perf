@@ -1182,7 +1182,7 @@ pub struct HistoricalDataMap<Query: BenchmarkQuery> {
 }
 
 impl<Query: BenchmarkQuery> HistoricalDataMap<Query> {
-    const NUM_PREVIOUS_COMMITS: usize = 30;
+    const NUM_PREVIOUS_COMMITS: usize = 0;
 
     async fn calculate(
         ctxt: &SiteCtxt,
