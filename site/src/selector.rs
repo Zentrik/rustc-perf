@@ -40,7 +40,12 @@ use std::time::Instant;
 ///
 /// Searches the commits in the index either from the left or the right.
 /// If not found in those commits, searches through the artifacts in the index.
-pub fn artifact_id_for_bound(master_commits: &[MasterCommit], data: &Index, bound: Bound, is_left: bool) -> Option<ArtifactId> {
+pub fn artifact_id_for_bound(
+    master_commits: &[MasterCommit],
+    data: &Index,
+    bound: Bound,
+    is_left: bool,
+) -> Option<ArtifactId> {
     let commits = data.commits();
     let commit = if is_left {
         commits
@@ -64,11 +69,19 @@ pub fn artifact_id_for_bound(master_commits: &[MasterCommit], data: &Index, boun
     })
 }
 
-pub fn range_subset(master_commits: &[MasterCommit], data: Vec<Commit>, range: RangeInclusive<Bound>) -> Vec<Commit> {
+pub fn range_subset(
+    master_commits: &[MasterCommit],
+    data: Vec<Commit>,
+    range: RangeInclusive<Bound>,
+) -> Vec<Commit> {
     let (a, b) = range.into_inner();
 
-    let left_idx = data.iter().position(|commit| a.left_match(master_commits, commit));
-    let right_idx = data.iter().rposition(|commit| b.right_match(master_commits, commit));
+    let left_idx = data
+        .iter()
+        .position(|commit| a.left_match(master_commits, commit));
+    let right_idx = data
+        .iter()
+        .rposition(|commit| b.right_match(master_commits, commit));
 
     if let (Some(left), Some(right)) = (left_idx, right_idx) {
         data.get(left..=right)
