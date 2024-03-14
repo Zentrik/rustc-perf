@@ -857,11 +857,13 @@ async fn compare_given_commits(
     };
 
     if let ArtifactId::Commit(c) = b.clone() {
-        if matches!(start, Bound::None)  && c.is_try() {
+        if matches!(start, Bound::None) && c.is_try() {
             let conn = ctxt.conn().await;
             let parent_sha_opt = conn.parent_of(&c.sha).await;
             if let Some(parent_sha) = parent_sha_opt {
-                a = ctxt.artifact_id_for_bound(Bound::Commit(parent_sha), true).unwrap_or(a);
+                a = ctxt
+                    .artifact_id_for_bound(Bound::Commit(parent_sha), true)
+                    .unwrap_or(a);
             }
         }
     }
@@ -964,7 +966,10 @@ fn previous_commits(
         ArtifactId::Commit(c) => {
             let mut end_date = c.date.0;
             while prevs.len() < n {
-                let latest_prev_commit_opt = master_commits.iter().filter(|m| m.time < end_date).max_by_key(|m| m.time);
+                let latest_prev_commit_opt = master_commits
+                    .iter()
+                    .filter(|m| m.time < end_date)
+                    .max_by_key(|m| m.time);
                 match latest_prev_commit_opt {
                     Some(latest_prev_commit) => {
                         prevs.push(ArtifactId::Commit(database::Commit {
@@ -974,7 +979,7 @@ fn previous_commits(
                         }));
                         end_date = latest_prev_commit.time;
                     }
-                    None => break
+                    None => break,
                 }
             }
         }
@@ -1130,7 +1135,8 @@ impl ArtifactComparison {
     ) -> bool {
         match (&self.a.artifact, &self.b.artifact) {
             (ArtifactId::Commit(a), ArtifactId::Commit(b)) => {
-                conn.parent_of(&b.sha).await.map_or(false, |p| p == a.sha)            }
+                conn.parent_of(&b.sha).await.map_or(false, |p| p == a.sha)
+            }
             _ => false,
         }
     }
