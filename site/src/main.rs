@@ -24,7 +24,7 @@ async fn main() {
             eprintln!("Defaulting to loading from `julia.db`");
             String::from("julia.db")
         });
-    let port = env::var("PORT")
+    let port = env::var("RUSTC_PORT")
         .ok()
         .and_then(|x| x.parse().ok())
         .unwrap_or(2346);
