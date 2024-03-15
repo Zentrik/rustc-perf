@@ -748,8 +748,9 @@ fn to_triage_response(result: ServerResult<api::triage::Response>) -> Response {
 
 async fn run_server(ctxt: Arc<RwLock<Option<Arc<SiteCtxt>>>>, addr: SocketAddr) {
     let server = Server::new(ctxt);
-    let svc = hyper::service::make_service_fn(move |_conn| {
+    let svc = hyper::service::make_service_fn(move |_conn: &hyper::server::conn::AddrStream| {
         let ctx = server.clone();
+        println!("{}", _conn.remote_addr());
         async move {
             Ok::<_, hyper::Error>(hyper::service::service_fn(move |req| {
                 let start = std::time::Instant::now();
