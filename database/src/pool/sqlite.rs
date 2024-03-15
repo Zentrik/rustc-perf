@@ -827,6 +827,40 @@ impl Connection for SqliteConnection {
         results
     }
 
+    async fn get_pstats_metric(&self, metric: &str, aid: u32) -> HashMap<String, f64> {
+        let mut conn = self.raw_ref();
+        let tx = conn.transaction().unwrap();
+
+        let mut querysid = tx
+            .prepare_cached("SELECT id, crate FROM pstat_series WHERE metric=?")
+            .unwrap();
+        let sids: HashMap<i64, String> = querysid
+            .query_map(params![&metric], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })
+            .unwrap_or_else(|e| {
+                panic!("{:?}: metric={:?}, aid={:?}", e, metric, aid);
+            })
+            .map(|r| r.unwrap())
+            .collect();
+
+        let mut query = tx
+            .prepare_cached("SELECT series, value FROM pstat WHERE aid = ?")
+            .unwrap();
+        query
+            .query_map(params![&aid], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, f64>(1)?))
+            })
+            .unwrap_or_else(|e| {
+                panic!("{:?}: metric={:?}, aid={:?}", e, metric, aid);
+            })
+            .map(|r: Result<(i64, f64), rusqlite::Error>| r.unwrap())
+            .map(|(sid, value)| (sids.get(&sid), value))
+            .filter(|(benchmark, _)| benchmark.is_some())
+            .map(|(benchmark, value)| (benchmark.unwrap().clone(), value))
+            .collect()
+    }
+
     async fn get_pstats(
         &self,
         series: &[u32],
@@ -835,7 +869,7 @@ impl Connection for SqliteConnection {
         let mut conn = self.raw_ref();
         let tx = conn.transaction().unwrap();
         let mut query = tx
-            .prepare_cached("select min(value) from pstat where series = ? and aid = ?;")
+            .prepare_cached("select min(value) from pstat where series = ? and aid = ? and cid=0;")
             .unwrap();
         series
             .iter()
