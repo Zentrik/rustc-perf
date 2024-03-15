@@ -10,7 +10,7 @@ use collector::compile::benchmark::category::Category;
 use collector::Bound;
 use database::{
     metric::Metric,
-    selector::{self, BenchmarkQuery, CompileBenchmarkQuery, RuntimeBenchmarkQuery, TestCase},
+    selector::{self, BenchmarkQuery, CompileBenchmarkQuery, CompileTestCase, RuntimeBenchmarkQuery, TestCase},
 };
 use database::{ArtifactId, Benchmark, Lookup, Profile, Scenario};
 use serde::Serialize;
@@ -745,7 +745,7 @@ async fn compare_given_commits(
     let aids = Arc::new(vec![a.clone(), b.clone()]);
 
     // get all crates, cache, and profile combinations for the given metric
-    let compile_comparisons = get_comparison::<CompileTestResultComparison, _, _>(
+    let compile_comparisons = get_comparison::<CompileTestResultComparison, _>(
         ctxt,
         CompileBenchmarkQuery::all_for_metric(metric),
         a.clone(),
@@ -761,21 +761,10 @@ async fn compare_given_commits(
         },
     )
     .await?;
+    println!("{}", compile_comparisons.len());
 
     // get all crates, cache, and profile combinations for the given metric
-    let runtime_comparisons = get_comparison::<RuntimeTestResultComparison, _, _>(
-        ctxt,
-        RuntimeBenchmarkQuery::all_for_metric(metric),
-        a.clone(),
-        aids,
-        metric,
-        master_commits,
-        |test_case, comparison| RuntimeTestResultComparison {
-            benchmark: test_case.benchmark,
-            comparison,
-        },
-    )
-    .await?;
+    let runtime_comparisons = HashSet::new();
 
     let conn = ctxt.conn().await;
     let mut errors_in_b = conn.get_error(b.lookup(&idx).unwrap()).await;
@@ -795,11 +784,10 @@ async fn compare_given_commits(
 
 async fn get_comparison<
     Comparison: Eq + Hash,
-    Query: BenchmarkQuery,
-    F: Fn(Query::TestCase, TestResultComparison) -> Comparison,
+    F: Fn(CompileTestCase, TestResultComparison) -> Comparison,
 >(
     ctxt: &SiteCtxt,
-    query: Query,
+    query: CompileBenchmarkQuery,
     start_artifact: ArtifactId,
     aids: Arc<Vec<ArtifactId>>,
     metric: Metric,
@@ -808,18 +796,34 @@ async fn get_comparison<
 ) -> Result<HashSet<Comparison>, BoxedError> {
     // `responses` contains series iterators. The first element in the iterator is the data
     // for `a` and the second is the data for `b`
-    let mut responses = ctxt.statistic_series(query.clone(), aids).await?;
 
-    let statistics_for_a = statistics_from_series(&mut responses);
-    let statistics_for_b = statistics_from_series(&mut responses);
+    let conn = ctxt.conn().await;
+    let index = ctxt.index.load();
+    let statistics_for_a = conn
+        .get_pstats_metric(metric.as_str(), aids[0].lookup(&index).unwrap().0)
+        .await;
+    let statistics_for_b = conn
+        .get_pstats_metric(metric.as_str(), aids[1].lookup(&index).unwrap().0)
+        .await;
 
     // TODO: would be nice if historical data was per perf series, so we don't ignore commits that weren't run on the whole benchmark suite.
-    let mut historical_data =
-        HistoricalDataMap::<Query>::calculate(ctxt, start_artifact, master_commits, query).await?;
+    let mut historical_data = HistoricalDataMap::<CompileBenchmarkQuery>::calculate(
+        ctxt,
+        start_artifact,
+        master_commits,
+        query,
+    )
+    .await?;
     Ok(statistics_for_a
         .into_iter()
-        .filter_map(|(test_case, a)| {
-            statistics_for_b.get(&test_case).map(|&b| {
+        .filter_map(|(benchmark, a)| {
+            statistics_for_b.get(&benchmark).map(|&b| {
+                let test_case = CompileTestCase {
+                    benchmark: Benchmark::from(benchmark.as_str()),
+                    scenario: Scenario::Empty,
+                    profile: Profile::Opt,
+                    backend: CodegenBackend::Llvm,
+                };
                 let comparison = TestResultComparison {
                     metric,
                     historical_data: historical_data.data.remove(&test_case),
@@ -1055,7 +1059,7 @@ pub struct HistoricalDataMap<Query: BenchmarkQuery> {
 }
 
 impl<Query: BenchmarkQuery> HistoricalDataMap<Query> {
-    const NUM_PREVIOUS_COMMITS: usize = 5;
+    const NUM_PREVIOUS_COMMITS: usize = 0;
 
     async fn calculate(
         ctxt: &SiteCtxt,

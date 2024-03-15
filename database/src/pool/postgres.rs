@@ -670,6 +670,10 @@ where
             .collect()
     }
 
+    async fn get_pstats_metric(&self, metric: &str, aid: u32) -> HashMap<String, f64> {
+        HashMap::new()
+    }
+
     async fn get_pstats(
         &self,
         pstat_series_row_ids: &[u32],
