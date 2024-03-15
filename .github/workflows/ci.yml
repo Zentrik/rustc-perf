@@ -6,9 +6,7 @@ on:
   pull_request: {}
   schedule:
     - cron: "0 12 * * 1" # Every Monday at 12:00 UTC
-
-env:
-  AWS_ACCESS_KEY_ID: AKIA46X5W6CZBLO3VBND
+  workflow_dispatch:
 
 jobs:
   test_and_deploy:
@@ -50,18 +48,6 @@ jobs:
           tags: rustc-perf
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Deploy to production
-        uses: rust-lang/simpleinfra/github-actions/upload-docker-image@master
-        with:
-          image: rustc-perf
-          repository: rust-rustc-perf
-          region: us-west-1
-          redeploy_ecs_cluster: rust-ecs-prod
-          redeploy_ecs_service: rustc-perf
-          aws_access_key_id: "${{ env.AWS_ACCESS_KEY_ID }}"
-          aws_secret_access_key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/deploy'
 
   test_on_windows:
     name: Test on Windows
