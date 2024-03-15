@@ -1153,12 +1153,26 @@ impl HistoricalData {
     //       |   - not significant, includes zero
     //       |
     //       ---- -significance_threshold()
-    fn significance_threshold(&self) -> f64 {
+    fn significance_threshold(&self, metric: Metric) -> f64 {
         let (q1, q3) = self.quartiles();
 
         // Changes that are IQR_MULTIPLIER away from the Q3 are considered
         // outliers, and we judge those as significant.
-        q3 + (q3 - q1) * Self::IQR_MULTIPLIER
+        let estimate = q3 + (q3 - q1) * Self::IQR_MULTIPLIER;
+
+        // If the deviation is only say 5ns likely noise
+        fn median(data: &[f64]) -> f64 {
+            if data.len() % 2 == 0 {
+                (data[(data.len() - 1) / 2] + data[data.len() / 2]) / 2.0
+            } else {
+                data[data.len() / 2]
+            }
+        }
+        let ns_estimate = 5. / median(&self.data);
+        match metric {
+            Metric::MinWallTime | Metric::MedianWallTime | Metric::MeanWallTime | Metric::MinGCTime | Metric::MedianGCTime | Metric::MeanGCTime => ns_estimate.max(estimate),
+            _ => estimate
+        }
     }
 
     // (q1, q3)
@@ -1230,7 +1244,7 @@ pub struct TestResultComparison {
 impl TestResultComparison {
     /// The amount of relative change considered significant when
     /// we cannot determine from historical data
-    const DEFAULT_SIGNIFICANCE_THRESHOLD: f64 = 0.002;
+    const DEFAULT_SIGNIFICANCE_THRESHOLD: f64 = 0.05;
 
     fn is_regression(&self) -> bool {
         let (a, b) = self.results;
@@ -1250,7 +1264,7 @@ impl TestResultComparison {
     fn significance_threshold(&self) -> f64 {
         self.historical_data
             .as_ref()
-            .map(|d| d.significance_threshold())
+            .map(|d| d.significance_threshold(self.metric))
             .unwrap_or(Self::DEFAULT_SIGNIFICANCE_THRESHOLD)
     }
 
