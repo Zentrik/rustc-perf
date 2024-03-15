@@ -830,15 +830,20 @@ impl Connection for SqliteConnection {
     }
 
     async fn get_pstats_metric(&self, metric: &str, aid: u32) -> HashMap<String, f64> {
+        let start_time = std::time::Instant::now();
+
         let mut conn = self.raw_ref();
         let tx = conn.transaction().unwrap();
 
-        let mut querysid = tx
-            .prepare_cached("SELECT id, crate FROM pstat_series WHERE metric=?")
+        let mut query = tx
+            .prepare_cached("SELECT crate, value FROM (SELECT series, value FROM pstat WHERE aid=?) INNER JOIN pstat_series ON series = pstat_series.id WHERE pstat_series.metric = ?") // getting series instead of crate is only marginally faster (~2ms)
+            // I thought this was faster than our other inner join, but this has the same query plan now weirldy?
+            // "SEARCH pstat USING INDEX idx_pstat_aid (aid=?)"
+            //  "SEARCH pstat_series USING INTEGER PRIMARY KEY (rowid=?)"
             .unwrap();
-        let sids: HashMap<i64, String> = querysid
-            .query_map(params![&metric], |row| {
-                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+        let result = query
+            .query_map(params![&aid, &metric], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
             })
             .unwrap_or_else(|e| {
                 panic!("{:?}: metric={:?}, aid={:?}", e, metric, aid);
@@ -846,21 +851,8 @@ impl Connection for SqliteConnection {
             .map(|r| r.unwrap())
             .collect();
 
-        let mut query = tx
-            .prepare_cached("SELECT series, value FROM pstat WHERE aid = ?")
-            .unwrap();
-        query
-            .query_map(params![&aid], |row| {
-                Ok((row.get::<_, i64>(0)?, row.get::<_, f64>(1)?))
-            })
-            .unwrap_or_else(|e| {
-                panic!("{:?}: metric={:?}, aid={:?}", e, metric, aid);
-            })
-            .map(|r: Result<(i64, f64), rusqlite::Error>| r.unwrap())
-            .map(|(sid, value)| (sids.get(&sid), value))
-            .filter(|(benchmark, _)| benchmark.is_some())
-            .map(|(benchmark, value)| (benchmark.unwrap().clone(), value))
-            .collect()
+        println!("Took {:.2?} for pstats query for {metric} and aid: {aid}", start_time.elapsed());
+        result
     }
 
     async fn get_pstats(
