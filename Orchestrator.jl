@@ -11,7 +11,7 @@ function start_server()
     if !isnothing(proc[])
         error("Server already running")
     end
-    proc[] = open(pipeline(`$(joinpath(@__DIR__, "target", "release", "site")) julia.db`))
+    proc[] = open(pipeline(`$(joinpath(@__DIR__, "target", "release", "site")) julia.db`, stdout=stdout), read=false)
 end
 function kill_server()
     if !isnothing(proc[])
