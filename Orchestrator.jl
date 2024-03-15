@@ -3,7 +3,7 @@ Pkg.activate(@__DIR__)
 using LibGit2, Dates
 include("upload_nanosoldier_to_db.jl")
 
-const sleep_time = Dates.Minute(10)
+const sleep_time = Dates.Minute(5)
 
 # Taken from PProf.jl
 const proc = Ref{Union{Base.Process, Nothing}}(nothing)
