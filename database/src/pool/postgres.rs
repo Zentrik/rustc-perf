@@ -671,7 +671,7 @@ where
     }
 
     async fn get_pstats_metric(&self, metric: &str, aid: u32) -> HashMap<String, f64> {
-        HashMap::new()
+        unimplemented!("Fetching pstats_metric is not implemented for sqlite")
     }
 
     async fn get_pstats(
