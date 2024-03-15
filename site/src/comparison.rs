@@ -1215,7 +1215,7 @@ impl HistoricalDataMap {
 
         futures::future::join_all(
             aids.iter()
-                .map(|aid| conn.get_pstats_metric(metric.as_str(), aid.clone())),
+                .map(|aid| conn.get_pstats_metric(metric.as_str(), *aid)),
         )
         .await
         .iter()
@@ -1230,7 +1230,7 @@ impl HistoricalDataMap {
                 historical_data
                     .entry(test_case)
                     .or_default()
-                    .push(value.clone());
+                    .push(*value);
             });
         });
 
