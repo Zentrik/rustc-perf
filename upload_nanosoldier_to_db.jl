@@ -251,11 +251,11 @@ function process_benchmarks(dir)
         pstat_df = DataFrame()
         for file in files
             if contains(file, r"^data.tar.\w+$")
-                process_benchmark_archive!(pstat_df, joinpath(root, file), next_artifact_id, db, benchmark_to_pstat_series_id)
+                @time "processing" process_benchmark_archive!(pstat_df, joinpath(root, file), next_artifact_id, db, benchmark_to_pstat_series_id)
             end
         end
         if !isempty(pstat_df)
-            @time SQLite.load!(pstat_df, db, "pstat")
+            @time "loading" SQLite.load!(pstat_df, db, "pstat")
         end
     end
 
