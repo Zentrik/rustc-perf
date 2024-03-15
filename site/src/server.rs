@@ -357,7 +357,7 @@ async fn serve_req(server: Server, req: Request) -> Result<Response, ServerError
         None
     };
 
-    if let Some(response) = handle_fs_path(&req, path).await {
+    if let Some(response) = handle_fs_path(&req, path, allow_compression).await {
         return Ok(response);
     }
 
@@ -594,7 +594,11 @@ lazy_static::lazy_static! {
 }
 
 /// Handle the case where the path is to a static file
-async fn handle_fs_path(req: &Request, path: &str) -> Option<http::Response<hyper::Body>> {
+async fn handle_fs_path(
+    req: &Request,
+    path: &str,
+    allow_compression: bool,
+) -> Option<http::Response<hyper::Body>> {
     if path.contains("./") | path.contains("../") {
         return Some(not_found());
     }
@@ -619,6 +623,7 @@ async fn handle_fs_path(req: &Request, path: &str) -> Option<http::Response<hype
     }
 
     let relative_path = path.trim_start_matches('/');
+    let mut compressed = false;
     let source = match path {
         "" | "/" | "/index.html" | "/compare.html" => resolve_template("compare.html").await,
         "/bootstrap.html"
@@ -627,20 +632,37 @@ async fn handle_fs_path(req: &Request, path: &str) -> Option<http::Response<hype
         | "/detailed-query.html"
         | "/help.html"
         | "/status.html" => resolve_template(relative_path).await,
-        _ => TEMPLATES.get_static_asset(relative_path)?,
+        _ => {
+            let (data, _compressed) = TEMPLATES.get_static_asset(relative_path, allow_compression);
+            compressed = _compressed;
+            data?
+        }
     };
 
-    let p = Path::new(&path);
-    match p.extension().and_then(|x| x.to_str()) {
-        Some("html") => response = response.header_typed(ContentType::html()),
-        Some("png") => response = response.header_typed(ContentType::png()),
-        Some("json") => response = response.header_typed(ContentType::json()),
-        Some("svg") => response = response.header("Content-Type", "image/svg+xml"),
-        Some("css") => response = response.header("Content-Type", "text/css"),
-        Some("js") => response = response.header("Content-Type", "application/javascript"),
-        _ => {
-            if path.is_empty() || path == "/" {
-                response = response.header_typed(ContentType::html());
+    if compressed {
+        response = response.header(
+            hyper::header::CONTENT_ENCODING,
+            hyper::header::HeaderValue::from_static("br"),
+        );
+    } else {
+        let p = Path::new(&path);
+        match p.extension().and_then(|x| x.to_str()) {
+            Some("html") => response = response.header_typed(ContentType::html()),
+            Some("png") => response = response.header_typed(ContentType::png()),
+            Some("json") => response = response.header_typed(ContentType::json()),
+            Some("svg") => response = response.header("Content-Type", "image/svg+xml"),
+            Some("css") => response = response.header("Content-Type", "text/css"),
+            Some("js") => response = response.header("Content-Type", "application/javascript"),
+            Some("br") => {
+                response = response.header(
+                    hyper::header::CONTENT_ENCODING,
+                    hyper::header::HeaderValue::from_static("br"),
+                )
+            }
+            _ => {
+                if path.is_empty() || path == "/" {
+                    response = response.header_typed(ContentType::html());
+                }
             }
         }
     }

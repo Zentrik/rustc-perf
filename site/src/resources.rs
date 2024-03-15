@@ -8,6 +8,7 @@ use rust_embed::RustEmbed;
 #[derive(RustEmbed)]
 #[folder = "frontend/static/"]
 #[include = "*.js"]
+#[include = "*.br"]
 #[include = "*.css"]
 #[include = "*.svg"]
 #[include = "*.png"]
@@ -17,6 +18,7 @@ struct StaticAssets;
 #[derive(RustEmbed)]
 #[folder = "frontend/dist"]
 #[include = "*.js"]
+#[include = "*.br"]
 #[include = "*.css"]
 struct StaticCompiledAssets;
 
@@ -39,10 +41,23 @@ impl ResourceResolver {
         })
     }
 
-    pub fn get_static_asset(&self, path: &str) -> Option<Vec<u8>> {
-        StaticCompiledAssets::get(path)
-            .or_else(|| StaticAssets::get(path))
-            .map(|file| file.data.to_vec())
+    pub fn get_static_asset(&self, path: &str, allow_compression: bool) -> (Option<Vec<u8>>, bool) {
+        if allow_compression {
+            let compressed_path = path.to_owned() + ".br";
+            let data = StaticCompiledAssets::get(compressed_path.as_str())
+                .or_else(|| StaticAssets::get(compressed_path.as_str()))
+                .map(|file| file.data.to_vec());
+            if data.is_some() {
+                return (data, true);
+            }
+        }
+
+        (
+            StaticCompiledAssets::get(path)
+                .or_else(|| StaticAssets::get(path))
+                .map(|file| file.data.to_vec()),
+            false,
+        )
     }
 
     pub async fn get_template(&self, path: &str) -> anyhow::Result<Vec<u8>> {
