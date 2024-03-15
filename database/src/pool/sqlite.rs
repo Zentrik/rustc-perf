@@ -225,12 +225,11 @@ static MIGRATIONS: &[Migration] = &[
             statistic text not null,
             UNIQUE(crate, profile, cache, statistic)
         );
-        create table pstat(
-            series integer references pstat_series(id) on delete cascade on update cascade,
-            aid integer references artifact(id) on delete cascade on update cascade,
-            cid integer references collection(id) on delete cascade on update cascade,
+        create table pstat_new(
+            aid integer not null references artifact(id) on delete cascade on update cascade,
+            series integer not null references pstat_series(id) on delete cascade on update cascade,
             value double not null,
-            PRIMARY KEY(series, aid, cid)
+            PRIMARY KEY(aid, series)
         );
         create table self_profile_query_series(
             id integer primary key not null,
@@ -864,7 +863,7 @@ impl Connection for SqliteConnection {
         let mut conn = self.raw_ref();
         let tx = conn.transaction().unwrap();
         let mut query = tx
-            .prepare_cached("select min(value) from pstat where series = ? and aid = ? and cid=0;")
+            .prepare_cached("select min(value) from pstat where series = ? and aid = ?")
             .unwrap();
         series
             .iter()
