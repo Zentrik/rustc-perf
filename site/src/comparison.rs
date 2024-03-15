@@ -9,6 +9,7 @@ use crate::load::SiteCtxt;
 use crate::selector::{
     self, BenchmarkQuery, CompileBenchmarkQuery, CompileTestCase, RuntimeBenchmarkQuery, TestCase,
 };
+use rayon::prelude::*;
 
 use collector::compile::benchmark::category::Category;
 use collector::Bound;
@@ -1206,19 +1207,23 @@ impl HistoricalDataMap {
             });
         }
 
-        let conn = ctxt.conn().await;
         let index = ctxt.index.load();
         let aids: Vec<u32> = previous_commits
             .iter()
             .map(|aid| aid.lookup(&index).unwrap().0)
             .collect();
+        let conns_futures = aids.iter().map(|_| ctxt.conn());
+        let conns = futures::future::join_all(conns_futures).await;
 
-        futures::future::join_all(
-            aids.iter()
-                .map(|aid| conn.get_pstats_metric(metric.as_str(), *aid)),
-        )
-        .await
-        .iter()
+        let start_time: std::time::Instant = std::time::Instant::now();
+
+        let futures: Vec<_> = aids.clone().into_par_iter()
+                .enumerate()
+                .map(|(i, aid)| conns[i].get_pstats_metric(metric.as_str(), aid))
+                .collect();
+        let series_data: Vec<hashbrown::HashMap<String, f64>> = futures::future::join_all(futures).await;
+
+        series_data.iter()
         .for_each(|benchmark_to_value| {
             benchmark_to_value.iter().for_each(|(benchmark, value)| {
                 let test_case = CompileTestCase {
@@ -1230,6 +1235,10 @@ impl HistoricalDataMap {
                 historical_data.entry(test_case).or_default().push(*value);
             });
         });
+        println!(
+            "Took {:.2?} for historical data for {} with {} commits",
+            start_time.elapsed(), metric.as_str(), aids.len()
+        );
 
         // Only retain test cases for which we have enough data to calculate variance.
         historical_data.retain(|_, v| v.data.len() >= Self::NUM_PREVIOUS_COMMITS);
