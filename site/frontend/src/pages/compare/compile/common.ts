@@ -167,7 +167,14 @@ export function computeCompileComparisonsWithNonRelevant(
       scenarioFilter(comparison.testCase.scenario) &&
       backendFilter(comparison.testCase.backend) &&
       categoryFilter(comparison.testCase.category) &&
-      artifactFilter(benchmarkMap[comparison.testCase.benchmark] ?? null) &&
+      artifactFilter({
+        name: comparison.testCase.benchmark,
+        category: "primary" as Category,
+        binary: null,
+        iterations: null,
+        release_profile: null,
+        dev_profile: null
+      }) &&
       nameFiltered
     );
   }
@@ -180,7 +187,7 @@ export function computeCompileComparisonsWithNonRelevant(
           profile: c.profile,
           scenario: c.scenario,
           backend: c.backend,
-          category: (benchmarkMap[c.benchmark] || {}).category || "secondary",
+          category: "primary" as Category, // TODO: HACK we know must be primary
         };
         return calculateComparison(c.comparison, testCase);
       }
@@ -202,8 +209,8 @@ export function createCompileBenchmarkMap(
   data: CompareResponse
 ): CompileBenchmarkMap {
   const benchmarks = {};
-  for (const benchmark of data.compile_benchmark_metadata) {
-    benchmarks[benchmark.name] = {...benchmark};
-  }
+  // for (const benchmark of data.compile_benchmark_metadata) {
+  //   benchmarks[benchmark.name] = {...benchmark};
+  // }
   return benchmarks;
 }

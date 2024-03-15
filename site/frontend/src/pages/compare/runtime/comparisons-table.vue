@@ -3,7 +3,7 @@ import {TestCaseComparison} from "../data";
 import Tooltip from "../tooltip.vue";
 import {percentClass} from "../shared";
 import {RuntimeTestCase} from "./common";
-import {computed} from "vue";
+import * as style from "style:./comparisons-table.vue"
 
 const props = defineProps<{
   comparisons: TestCaseComparison<RuntimeTestCase>[];

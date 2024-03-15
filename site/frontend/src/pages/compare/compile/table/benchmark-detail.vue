@@ -268,7 +268,7 @@ function graphLink(
 
 const metadata = computed(
   (): CompileBenchmarkMetadata =>
-    props.benchmarkMap[props.testCase.benchmark] ?? null
+    null
 );
 const cargoProfile = computed((): CargoProfileMetadata => {
   if (
