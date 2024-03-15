@@ -43,8 +43,8 @@ Here is the diagram for compile-time benchmarks:
 │ │ id *          │◄┐│ id *     │   │               │
 └─┤ crate         │ └┤ series   │   │               │
   │ profile       │  │ aid      ├───┼───────────────┘
-  │ scenario      │  │ cid      │   │
-  │ backend       │  │ value    ├───┘
+  │ scenario      │  │ value    │   │
+  │ backend       │  │          ├───┘
   │ metric        │  └──────────┘
   └───────────────┘
 ```
@@ -176,9 +176,9 @@ has its own unique entry in this table.
 
 ```
 sqlite> select * from pstat limit 1;
-series      aid         cid         value
-----------  ----------  ----------  ----------
-1           1           1           24.93
+aid         series      value
+----------  ----------  ----------
+1           1           24.93
 ```
 
 ### runtime_pstat_series

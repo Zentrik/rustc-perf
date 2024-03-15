@@ -149,13 +149,13 @@ function push_metric_to_pstat!(df::DataFrame, db::SQLite.DB, benchmark_name::Str
     end
     series_id = benchmark_to_pstat_series_id[(benchmark_name, metric)]
 
-    pstat_row = (series=series_id, aid=aid, cid=0, value=Float64(value))
+    pstat_row = (series=series_id, aid=aid, value=Float64(value))
     push!(df, pstat_row)
 end
 
 function create_pstat_rows(series_id, aid, val)
     len =  length(val)
-    DataFrame(series=series_id, aid=fill(aid, len), cid=fill(0, len), value=val)
+    DataFrame(series=series_id, aid=fill(aid, len), value=val)
 end
 
 get_sha(file) = split(file, '_')[1]
@@ -417,6 +417,84 @@ function fixup_parent_sha_and_pr_try_commits()
     end
 end
 
+# CAREFUL some of these commits might actually be daily
+function fixup_tag_of_byhash()
+    db = SQLite.DB("julia.db")
+    artifacts = DBInterface.execute(db, "SELECT name FROM artifact WHERE type='master'") |> DataFrame
+
+    sha_to_tags = Dict{String, Vector{String}}()
+
+    root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_hash"
+    dirs = readdir(root_dir)
+    for sha in artifacts[!, "name"]
+        matching_dirs = findall(dir->dir[1:7] == sha[1:7] || dir[end-6:end] == sha[1:7], dirs)
+        if isempty(matching_dirs)
+            # println("No matching dir for $sha")
+        elseif length(matching_dirs) > 1
+            println("Multiple matching dirs for $sha")
+        else
+            dir = dirs[matching_dirs[1]]
+            if dir == sha[1:7]
+                println("Dir is the same as sha for $sha")
+                continue
+            end
+            println("Processing $sha in $dir")
+            report_file = readuntil(joinpath(root_dir, dir, "report.md"), "## Results")
+            tag_predicate = match(r"\*Tag Predicate:\* `(.*)`", report_file).captures[1]
+
+            predicate_in_table_query = DBInterface.execute(db, "SELECT include FROM pull_request_build WHERE bors_sha='$sha'") |> DataFrame
+            @assert size(predicate_in_table_query, 1) == 1
+            predicate_in_table_query = predicate_in_table_query[1, "include"]
+
+            if tag_predicate != predicate_in_table_query
+                if sha ∉ keys(sha_to_tags)
+                    sha_to_tags[sha] = []
+                end
+                push!(sha_to_tags[sha], string(tag_predicate))
+            end
+        end
+    end
+
+    daily_shas = Set()
+
+    root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_date"
+    dirs = readdir(root_dir)
+    for yyyy_mm in dirs, day in readdir(joinpath(root_dir, yyyy_mm))
+        dir = joinpath(yyyy_mm, day)
+        # println("Processing $dir")
+        report_file = readuntil(joinpath(root_dir, dir, "report.md"), "## Results")
+        sha = match(r"\*Commit(?:s|\(s\)|):\* \[[^/]+/julia@([^\]]+)\]", report_file).captures[1]
+        push!(daily_shas, sha)
+    end
+
+    println(length(keys(sha_to_tags) ∩ daily_shas))
+    sha_to_tags
+end
+
+function fixup_tag_of_daily()
+    db = SQLite.DB("julia.db")
+
+    sha_to_tags = Dict{String, Vector{String}}()
+
+    root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_date"
+    dirs = readdir(root_dir)
+    for yyyy_mm in dirs, day in readdir(joinpath(root_dir, yyyy_mm))
+        dir = joinpath(yyyy_mm, day)
+        # println("Processing $dir")
+        report_file = readuntil(joinpath(root_dir, dir, "report.md"), "## Results")
+        sha = match(r"\*Commit(?:s|\(s\)|):\* \[[^/]+/julia@([^\]]+)\]", report_file).captures[1]
+        tag_predicate = match(r"\*Tag Predicate:\* `(.*)`", report_file).captures[1]
+
+        if tag_predicate != "ALL"
+            push!(sha_to_tags[sha], string(tag_predicate))
+        end
+        println("$dir had $tag_predicate")
+        # DBInterface.execute(db, "UPDATE pull_request_build SET include='$tag_predicate' WHERE bors_sha='$sha'") |> DataFrame
+    end
+
+    sha_to_tags
+end
+
 function add_pr_nums()
     db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
@@ -512,17 +590,17 @@ function create_sample_pstat_df()
                 if sha ∉ keys(processed_commits) # get alloc and memory data, same for all files
                     for metric in (:allocs, :memory) # allocs is num of allocations, memory is in bytes
                         series_id = benchmark_to_pstat_series_id[(benchmark_name, string(metric))]
-                        pstat_row = (series=series_id, aid=artifact_id, cid=0, value=Float64(getfield(trial, metric)))
+                        pstat_row = (series=series_id, aid=artifact_id, value=Float64(getfield(trial, metric)))
                         push!(df, pstat_row)
                     end
                 end
 
                 series_id = benchmark_to_pstat_series_id[(benchmark_name, primary_metric * "-wall-time")]
-                pstat_row = (series=series_id, aid=artifact_id, cid=0, value=Float64(trial.time))
+                pstat_row = (series=series_id, aid=artifact_id, value=Float64(trial.time))
                 push!(df, pstat_row)
 
                 series_id = benchmark_to_pstat_series_id[(benchmark_name, primary_metric * "-gc-time")]
-                pstat_row = (series=series_id, aid=artifact_id, cid=0, value=Float64(trial.gctime))
+                pstat_row = (series=series_id, aid=artifact_id, value=Float64(trial.gctime))
                 push!(df, pstat_row)
             end
 
