@@ -255,7 +255,7 @@ function process_benchmarks(dir)
             end
         end
         if !isempty(pstat_df)
-            SQLite.load!(pstat_df, db, "pstat")
+            @time SQLite.load!(pstat_df, db, "pstat")
         end
     end
 
@@ -465,4 +465,78 @@ function add_pr_nums()
 
     return pr_df
     pr_df |> SQLite.load!(db, "pull_request_build")
+end
+
+function create_sample_pstat_df()
+    @time begin
+        _db = SQLite.DB("julia.db")
+
+        pstat_series_table = DBInterface.execute(_db, "SELECT * FROM pstat_series") |> DataFrame
+        # need to tranform into vector as indexing into df extremely slow
+        names_col = pstat_series_table[:, "crate"]
+        metrics_col = pstat_series_table[:, "metric"]
+        pstat_series_id_column = pstat_series_table[:, "id"]
+
+        benchmark_to_pstat_series_id = Dict((name, metric) => id for (id, name, metric) in zip(pstat_series_id_column, names_col, metrics_col))
+
+        # dir = "$(@__DIR__)/../NanosoldierReports/0a05a13_vs_13d3efb"
+        dir = "$(@__DIR__)/../NanosoldierReports/13"
+    end
+
+    db = SQLite.DB("results.db")
+    artifact_id_query = DBInterface.execute(db, "SELECT id FROM artifact ORDER BY id DESC LIMIT 1") |> DataFrame
+    next_artifact_id = (isempty(artifact_id_query) ? 0 : artifact_id_query[1, "id"]) + 1
+
+    @time begin
+        df = DataFrame()
+
+        processed_commits = Dict{String, Int}()
+
+        for file in readdir(dir)
+            if !endswith(file, ".json") || !contains(file, r".(minimum|median|mean).json")
+                continue
+            end
+            primary_metric = split(file, '.')[end-1]
+            if primary_metric == "minimum"
+                primary_metric = "min"
+            end
+
+            sha = get_sha(file)
+
+            group = BenchmarkTools.load(joinpath(dir, file))[1]
+            benchmark_data = rec_flatten_benchmarkgroup(group)
+
+            artifact_id = get(processed_commits, sha, next_artifact_id)
+
+            for (benchmark_name, trial) in benchmark_data
+                if sha ∉ keys(processed_commits) # get alloc and memory data, same for all files
+                    for metric in (:allocs, :memory) # allocs is num of allocations, memory is in bytes
+                        series_id = benchmark_to_pstat_series_id[(benchmark_name, string(metric))]
+                        pstat_row = (series=series_id, aid=artifact_id, cid=0, value=Float64(getfield(trial, metric)))
+                        push!(df, pstat_row)
+                    end
+                end
+
+                series_id = benchmark_to_pstat_series_id[(benchmark_name, primary_metric * "-wall-time")]
+                pstat_row = (series=series_id, aid=artifact_id, cid=0, value=Float64(trial.time))
+                push!(df, pstat_row)
+
+                series_id = benchmark_to_pstat_series_id[(benchmark_name, primary_metric * "-gc-time")]
+                pstat_row = (series=series_id, aid=artifact_id, cid=0, value=Float64(trial.gctime))
+                push!(df, pstat_row)
+            end
+
+            if sha ∉ keys(processed_commits)
+                processed_commits[sha] = artifact_id
+                next_artifact_id += 1
+                DBInterface.execute(db, "INSERT INTO artifact (id, name, type) VALUES ($artifact_id, '$artifact_id', 'master')")
+            end
+        end
+    end
+
+    @time begin
+        SQLite.load!(df, db, "pstat")
+    end
+
+    return df
 end
