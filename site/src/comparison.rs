@@ -1102,10 +1102,7 @@ impl HistoricalDataMap {
                     profile: Profile::Opt,
                     backend: CodegenBackend::Llvm,
                 };
-                historical_data
-                    .entry(test_case)
-                    .or_default()
-                    .push(*value);
+                historical_data.entry(test_case).or_default().push(*value);
             });
         });
 

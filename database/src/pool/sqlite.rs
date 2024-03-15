@@ -851,7 +851,10 @@ impl Connection for SqliteConnection {
             .map(|r| r.unwrap())
             .collect();
 
-        println!("Took {:.2?} for pstats query for {metric} and aid: {aid}", start_time.elapsed());
+        println!(
+            "Took {:.2?} for pstats query for {metric} and aid: {aid}",
+            start_time.elapsed()
+        );
         result
     }
 
