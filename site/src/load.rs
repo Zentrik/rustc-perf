@@ -304,27 +304,8 @@ impl SiteCtxt {
             .collect()
     }
 
-    /// Get cached master-branch Rust commits.
-    /// Returns cached results immediately, but if the cached value is older than one minute,
-    /// updates in a background task for next time.
     pub fn get_master_commits(&self) -> Guard<Arc<MasterCommitCache>> {
-        let commits = self.master_commits.load();
-
-        // if commits.updated.elapsed() > std::time::Duration::from_secs(60) {
-        //     let master_commits = self.master_commits.clone();
-        //     tokio::task::spawn(async move {
-        //         // if another update happens before this one is done, we will download the data twice, but that's it
-        //         match MasterCommitCache::download().await {
-        //             Ok(commits) => master_commits.store(Arc::new(commits)),
-        //             Err(e) => {
-        //                 // couldn't get the data, keep serving cached results for now
-        //                 error!("error retrieving master commit list: {}", e)
-        //             }
-        //         }
-        //     });
-        // }
-
-        commits
+        self.master_commits.load()
     }
 }
 
