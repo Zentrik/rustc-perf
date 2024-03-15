@@ -886,7 +886,6 @@ async fn compare_given_commits(
         },
     )
     .await?;
-    println!("{}", compile_comparisons.len());
 
     // get all crates, cache, and profile combinations for the given metric
     let runtime_comparisons = HashSet::new();
@@ -919,6 +918,8 @@ async fn get_comparison<
     master_commits: &[collector::MasterCommit],
     func: F,
 ) -> Result<HashSet<Comparison>, BoxedError> {
+    assert!(CompileBenchmarkQuery::all_for_metric(metric) == query); // fast path
+
     // `responses` contains series iterators. The first element in the iterator is the data
     // for `a` and the second is the data for `b`
 
@@ -932,13 +933,8 @@ async fn get_comparison<
         .await;
 
     // TODO: would be nice if historical data was per perf series, so we don't ignore commits that weren't run on the whole benchmark suite.
-    let mut historical_data = HistoricalDataMap::<CompileBenchmarkQuery>::calculate(
-        ctxt,
-        start_artifact,
-        master_commits,
-        query,
-    )
-    .await?;
+    let mut historical_data =
+        HistoricalDataMap::calculate(ctxt, start_artifact, master_commits, query, metric).await?;
     Ok(statistics_for_a
         .into_iter()
         .filter_map(|(benchmark, a)| {
@@ -969,7 +965,7 @@ fn previous_commits(
 
     if let ArtifactId::Commit(c) = from {
         let mut end_date = c.date.0;
-        while prevs.len() < n && c.date.0 - end_date <= chrono::Duration::days(30) {
+        while prevs.len() < 10 && c.date.0 - end_date <= chrono::Duration::days(30) {
             let latest_prev_commit_opt = master_commits
                 .iter()
                 .filter(|m| m.time < end_date)
@@ -1178,20 +1174,23 @@ impl ArtifactComparison {
 }
 
 /// The historical data for a certain benchmark
-pub struct HistoricalDataMap<Query: BenchmarkQuery> {
+pub struct HistoricalDataMap {
     /// Historical data on a per test case basis
-    pub data: HashMap<Query::TestCase, HistoricalData>,
+    pub data: HashMap<CompileTestCase, HistoricalData>,
 }
 
-impl<Query: BenchmarkQuery> HistoricalDataMap<Query> {
-    const NUM_PREVIOUS_COMMITS: usize = 0;
+impl HistoricalDataMap {
+    const NUM_PREVIOUS_COMMITS: usize = 5;
 
     async fn calculate(
         ctxt: &SiteCtxt,
         from: ArtifactId,
         master_commits: &[collector::MasterCommit],
-        query: Query,
+        query: CompileBenchmarkQuery,
+        metric: Metric,
     ) -> Result<Self, BoxedError> {
+        assert!(CompileBenchmarkQuery::all_for_metric(metric) == query);
+
         let mut historical_data = HashMap::new();
 
         let previous_commits = Arc::new(previous_commits(
@@ -1207,15 +1206,33 @@ impl<Query: BenchmarkQuery> HistoricalDataMap<Query> {
             });
         }
 
-        let mut previous_commit_series = ctxt
-            .statistic_series(query, previous_commits.clone())
-            .await?;
+        let conn = ctxt.conn().await;
+        let index = ctxt.index.load();
+        let aids: Vec<u32> = previous_commits
+            .iter()
+            .map(|aid| aid.lookup(&index).unwrap().0)
+            .collect();
 
-        for _ in previous_commits.iter() {
-            for (key, stat) in statistics_from_series(&mut previous_commit_series) {
-                historical_data.entry(key).or_default().push(stat);
-            }
-        }
+        futures::future::join_all(
+            aids.iter()
+                .map(|aid| conn.get_pstats_metric(metric.as_str(), aid.clone())),
+        )
+        .await
+        .iter()
+        .for_each(|benchmark_to_value| {
+            benchmark_to_value.iter().for_each(|(benchmark, value)| {
+                let test_case = CompileTestCase {
+                    benchmark: Benchmark::from(benchmark.as_str()),
+                    scenario: Scenario::Empty,
+                    profile: Profile::Opt,
+                    backend: CodegenBackend::Llvm,
+                };
+                historical_data
+                    .entry(test_case)
+                    .or_default()
+                    .push(value.clone());
+            });
+        });
 
         // Only retain test cases for which we have enough data to calculate variance.
         historical_data.retain(|_, v| v.data.len() >= Self::NUM_PREVIOUS_COMMITS);
