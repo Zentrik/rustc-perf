@@ -1,16 +1,16 @@
-import {computeSummary, TestCaseComparison} from "../data";
-import {CompileTestCase} from "./common";
+import { computeSummary, TestCaseComparison } from "../data";
+import { CompileTestCase } from "./common";
 
 export function exportToMarkdown(
   comparisons: TestCaseComparison<CompileTestCase>[]
 ) {
   function changesTable(comparisons: TestCaseComparison<CompileTestCase>[]) {
     let data =
-      "| Benchmark | Profile | Scenario | % Change | Significance Factor |\n";
-    data += "|:---:|:---:|:---:|:---:|:---:|\n";
+      "| Benchmark | % Change | Significance Factor |\n";
+    data += "|:---:|:---:|:---:|\n";
 
     for (const comparison of comparisons) {
-      data += `| ${comparison.testCase.benchmark} | ${comparison.testCase.profile} | ${comparison.testCase.scenario} `;
+      data += `| ${comparison.testCase.benchmark} `;
       data += `| ${comparison.percent.toFixed(
         2
       )}% | ${comparison.significanceFactor.toFixed(2)}x\n`;
@@ -44,14 +44,9 @@ export function exportToMarkdown(
     2
   )}% | ${all.count} |\n\n`;
 
-  content += "# Primary benchmarks\n";
+  content += "# Benchmarks\n";
   content += changesTable(
-    comparisons.filter((testCase) => testCase.testCase.category === "primary")
-  );
-
-  content += "\n# Secondary benchmarks\n";
-  content += changesTable(
-    comparisons.filter((testCase) => testCase.testCase.category === "secondary")
+    comparisons
   );
 
   downloadFile(content, "perf-summary.md");
