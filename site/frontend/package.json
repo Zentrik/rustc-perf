@@ -30,18 +30,6 @@
     "vue": "^3.2.47"
   },
   "targets": {
-    "dashboard": {
-      "source": "src/pages/dashboard.ts",
-      "distDir": "dist/scripts"
-    },
-    "status": {
-      "source": "src/pages/status.ts",
-      "distDir": "dist/scripts"
-    },
-    "bootstrap": {
-      "source": "src/pages/bootstrap.ts",
-      "distDir": "dist/scripts"
-    },
     "graphs": {
       "source": "src/pages/graphs.ts",
       "distDir": "dist/scripts"
