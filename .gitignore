@@ -6,3 +6,4 @@ target
 /rust/
 /results
 *.db*
+prod_site

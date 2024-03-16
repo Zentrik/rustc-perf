@@ -6,12 +6,12 @@ include("upload_nanosoldier_to_db.jl")
 const sleep_time = Dates.Minute(5)
 
 # Taken from PProf.jl
-const proc = Ref{Union{Base.Process, Nothing}}(nothing)
+const proc = Ref{Union{Base.Process,Nothing}}(nothing)
 function start_server()
     if !isnothing(proc[])
         error("Server already running")
     end
-    proc[] = open(pipeline(`$(joinpath(@__DIR__, "target", "release", "site")) julia.db`, stdout=stdout), read=false)
+    proc[] = open(pipeline(`$(joinpath(@__DIR__, "prod_site")) julia.db`, stdout=stdout), read=false)
 end
 function kill_server()
     if !isnothing(proc[])
