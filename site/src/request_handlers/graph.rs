@@ -292,10 +292,7 @@ fn create_summary(
 ) -> ServerResult<HashMap<Profile, HashMap<String, graphs::Series>>> {
     let mut baselines = HashMap::new();
     let mut summary_benchmark = HashMap::new();
-    let summary_query_cases = iproduct!(
-        ctxt.summary_scenarios(),
-        vec![Profile::Check, Profile::Debug, Profile::Opt, Profile::Doc]
-    );
+    let summary_query_cases = iproduct!(ctxt.summary_scenarios(), vec![Profile::Opt]);
     for (scenario, profile) in summary_query_cases {
         let baseline = match baselines.entry((profile, scenario)) {
             std::collections::hash_map::Entry::Occupied(o) => *o.get(),
