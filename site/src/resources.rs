@@ -24,6 +24,8 @@ struct StaticAssets;
 #[include = "*.js"]
 #[include = "*.br"]
 #[include = "*.css"]
+// Debug Info (MAKE SURE THIS IS FRESHLY GENERATED (i.e. not with some old version of the site) and same if you have a .br version)
+#[include = "*.map"]
 struct StaticCompiledAssets;
 
 /// HTML template files that will be rendered by `tera`.
