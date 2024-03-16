@@ -1,4 +1,4 @@
-import {decode} from "msgpack-lite";
+import { decodeAsync } from "@msgpack/msgpack";
 
 export async function postJson<T>(path: string, body: any): Promise<T> {
   const response = await fetch(path, {
@@ -35,8 +35,7 @@ export async function postMsgpack<T>(path: string, body: any): Promise<T> {
     mode: "cors",
   });
   if (response.ok) {
-    const buffer = await response.clone().arrayBuffer();
-    return decode(new Uint8Array(buffer));
+    return await decodeAsync(response.body) as T;
   } else {
     const text = await response.text();
     alert(text);
