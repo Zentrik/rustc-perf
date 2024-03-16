@@ -7,3 +7,5 @@ target
 /results
 *.db*
 prod_site
+.cargo/
+.vscode/
