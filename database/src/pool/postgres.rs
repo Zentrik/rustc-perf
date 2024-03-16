@@ -670,7 +670,7 @@ where
             .collect()
     }
 
-    async fn get_pstats_metric(&self, _metric: &str, _aid: u32) -> HashMap<String, f64> {
+    async fn get_pstats_metric(&self, _metric: &str, _aid: u32) -> HashMap<u32, f64> {
         unimplemented!("Fetching pstats_metric is not implemented for sqlite")
     }
 

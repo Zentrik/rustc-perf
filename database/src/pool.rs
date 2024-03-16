@@ -103,7 +103,7 @@ pub trait Connection: Send + Sync {
         &self,
         aids: &[ArtifactIdNumber],
     ) -> HashMap<String, Vec<Option<Duration>>>;
-    async fn get_pstats_metric(&self, metric: &str, artifact_row_id: u32) -> HashMap<String, f64>;
+    async fn get_pstats_metric(&self, metric: &str, artifact_row_id: u32) -> HashMap<u32, f64>;
     async fn get_pstats(
         &self,
         pstat_series_row_ids: &[u32],

@@ -828,21 +828,21 @@ impl Connection for SqliteConnection {
         results
     }
 
-    async fn get_pstats_metric(&self, metric: &str, aid: u32) -> HashMap<String, f64> {
+    async fn get_pstats_metric(&self, metric: &str, aid: u32) -> HashMap<u32, f64> {
         let start_time = std::time::Instant::now();
 
         let mut conn = self.raw_ref();
         let tx = conn.transaction().unwrap();
 
         let mut query = tx
-            .prepare_cached("SELECT crate, value FROM (SELECT series, value FROM pstat WHERE aid=?) INNER JOIN pstat_series ON series = pstat_series.id WHERE pstat_series.metric = ?") // getting series instead of crate is only marginally faster (~2ms)
+            .prepare_cached("SELECT series, value FROM (SELECT series, value FROM pstat WHERE aid=?) INNER JOIN pstat_series ON series = pstat_series.id WHERE pstat_series.metric = ?") // getting series instead of crate is only marginally faster (~2ms)
             // I thought this was faster than our other inner join, but this has the same query plan now weirldy?
             // "SEARCH pstat USING INDEX idx_pstat_aid (aid=?)"
             //  "SEARCH pstat_series USING INTEGER PRIMARY KEY (rowid=?)"
             .unwrap();
         let result = query
             .query_map(params![&aid, &metric], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
+                Ok((row.get::<_, u32>(0)?, row.get::<_, f64>(1)?)) // seems a bit odd to say series id is a u32, but apparently sqlite isn't really typed
             })
             .unwrap_or_else(|e| {
                 panic!("{:?}: metric={:?}, aid={:?}", e, metric, aid);

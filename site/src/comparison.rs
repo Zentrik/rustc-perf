@@ -795,11 +795,20 @@ async fn get_comparison<
 ) -> Result<HashSet<Comparison>, BoxedError> {
     assert!(CompileBenchmarkQuery::all_for_metric(metric) == query); // fast path
 
+    let start_time: std::time::Instant = std::time::Instant::now();
+
     // `responses` contains series iterators. The first element in the iterator is the data
     // for `a` and the second is the data for `b`
 
+    let index: arc_swap::Guard<Arc<database::Index>> = ctxt.index.load();
+
+    let sid_to_benchmark: HashMap<_, _> = index
+        .compile_statistic_descriptions()
+        .filter(|(&(_, _, _, _, m), _)| m.as_str() == metric.as_str())
+        .map(|(&(benchmark, _, _, _, _), sid)| (sid, benchmark))
+        .collect();
+
     let conn = ctxt.conn().await;
-    let index = ctxt.index.load();
     let statistics_for_a = conn
         .get_pstats_metric(metric.as_str(), aids[0].lookup(&index).unwrap().0)
         .await;
@@ -808,14 +817,21 @@ async fn get_comparison<
         .await;
 
     // TODO: would be nice if historical data was per perf series, so we don't ignore commits that weren't run on the whole benchmark suite.
-    let mut historical_data =
-        HistoricalDataMap::calculate(ctxt, start_artifact, master_commits, query, metric).await?;
-    Ok(statistics_for_a
+    let mut historical_data = HistoricalDataMap::calculate(
+        ctxt,
+        start_artifact,
+        master_commits,
+        query,
+        metric,
+        &sid_to_benchmark,
+    )
+    .await?;
+    let res = Ok(statistics_for_a
         .into_iter()
-        .filter_map(|(benchmark, a)| {
-            statistics_for_b.get(&benchmark).map(|&b| {
+        .filter_map(|(sid, a)| {
+            statistics_for_b.get(&sid).map(|&b| {
                 let test_case = CompileTestCase {
-                    benchmark: Benchmark::from(benchmark.as_str()),
+                    benchmark: sid_to_benchmark.get(&sid).unwrap().clone(),
                     scenario: Scenario::Empty,
                     profile: Profile::Opt,
                     backend: CodegenBackend::Llvm,
@@ -828,7 +844,15 @@ async fn get_comparison<
                 func(test_case, comparison)
             })
         })
-        .collect())
+        .collect());
+
+    println!(
+        "Get commparsion took {:.2?} for {:?}",
+        start_time.elapsed(),
+        metric
+    );
+
+    res
 }
 
 fn previous_commits(
@@ -1063,6 +1087,7 @@ impl HistoricalDataMap {
         master_commits: &[collector::MasterCommit],
         query: CompileBenchmarkQuery,
         metric: Metric,
+        sid_to_benchmark: &HashMap<u32, Benchmark>,
     ) -> Result<Self, BoxedError> {
         assert!(CompileBenchmarkQuery::all_for_metric(metric) == query);
 
@@ -1094,10 +1119,10 @@ impl HistoricalDataMap {
         )
         .await
         .iter()
-        .for_each(|benchmark_to_value| {
-            benchmark_to_value.iter().for_each(|(benchmark, value)| {
+        .for_each(|sid_to_value| {
+            sid_to_value.iter().for_each(|(sid, value)| {
                 let test_case = CompileTestCase {
-                    benchmark: Benchmark::from(benchmark.as_str()),
+                    benchmark: sid_to_benchmark.get(sid).unwrap().clone(),
                     scenario: Scenario::Empty,
                     profile: Profile::Opt,
                     backend: CodegenBackend::Llvm,
@@ -1170,8 +1195,13 @@ impl HistoricalData {
         }
         let ns_estimate = 5. / median(&self.data);
         match metric {
-            Metric::MinWallTime | Metric::MedianWallTime | Metric::MeanWallTime | Metric::MinGCTime | Metric::MedianGCTime | Metric::MeanGCTime => ns_estimate.max(estimate),
-            _ => estimate
+            Metric::MinWallTime
+            | Metric::MedianWallTime
+            | Metric::MeanWallTime
+            | Metric::MinGCTime
+            | Metric::MedianGCTime
+            | Metric::MeanGCTime => ns_estimate.max(estimate),
+            _ => estimate,
         }
     }
 
