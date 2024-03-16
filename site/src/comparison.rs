@@ -802,7 +802,7 @@ async fn get_comparison<
 
     let index: arc_swap::Guard<Arc<database::Index>> = ctxt.index.load();
 
-    let sid_to_benchmark: HashMap<_, _> = index
+    let mut sid_to_benchmark: HashMap<_, _> = index
         .compile_statistic_descriptions()
         .filter(|(&(_, _, _, _, m), _)| m.as_str() == metric.as_str())
         .map(|(&(benchmark, _, _, _, _), sid)| (sid, benchmark))
@@ -831,7 +831,7 @@ async fn get_comparison<
         .filter_map(|(sid, a)| {
             statistics_for_b.get(&sid).map(|&b| {
                 let test_case = CompileTestCase {
-                    benchmark: sid_to_benchmark.get(&sid).unwrap().clone(),
+                    benchmark: sid_to_benchmark.remove(&sid).unwrap(),
                     scenario: Scenario::Empty,
                     profile: Profile::Opt,
                     backend: CodegenBackend::Llvm,
