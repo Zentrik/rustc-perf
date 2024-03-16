@@ -303,7 +303,7 @@ fn create_summary(
     let summary_query_cases = iproduct!(
         ctxt.summary_scenarios(),
         profile.map_or_else(
-            || vec![Profile::Check, Profile::Debug, Profile::Opt, Profile::Doc],
+            || vec![Profile::Opt],
             |p| vec![p]
         )
     );
