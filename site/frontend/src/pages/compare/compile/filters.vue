@@ -45,33 +45,6 @@ const opened = createPersistedRef(PREF_FILTERS_OPENED);
             <div class="section-heading">Filter</div>
             <input id="filter" type="text" v-model="filter.name" />
           </div>
-          <div class="section section-list-wrapper">
-            <div class="section-heading">
-              <div style="width: 160px">
-                <span>Categories</span>
-                <Tooltip
-                  >Select benchmarks based on their category (primary or
-                  secondary).
-                </Tooltip>
-              </div>
-            </div>
-            <ul class="states-list">
-              <li>
-                <label>
-                  <input type="checkbox" v-model="filter.category.primary" />
-                  <span class="label">primary</span>
-                </label>
-                <Tooltip>Real-world benchmarks.</Tooltip>
-              </li>
-              <li>
-                <label>
-                  <input type="checkbox" v-model="filter.category.secondary" />
-                  <span class="label">secondary</span>
-                </label>
-                <Tooltip>Artificial benchmarks and stress-tests.</Tooltip>
-              </li>
-            </ul>
-          </div>
           <div class="section">
             <div class="section-heading">
               <span>Show non-relevant results</span>

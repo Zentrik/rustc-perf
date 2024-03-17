@@ -6,15 +6,12 @@
  * and display a diff.
  **/
 
-import {computed, ref, Ref} from "vue";
-import {CompileTestCase} from "../../common";
-import {ArtifactDescription} from "../../../types";
+
+ import {CompileTestCase} from "../../common";
 import Tooltip from "../../../tooltip.vue";
 import CachegrindCmd from "./cachegrind-cmd.vue";
 
 const props = defineProps<{
-  artifact: ArtifactDescription;
-  baseArtifact: ArtifactDescription;
   testCase: CompileTestCase;
 }>();
 </script>
@@ -27,11 +24,7 @@ const props = defineProps<{
     </Tooltip>
   </div>
 
-  <CachegrindCmd
-    :commit="profileCommit"
-    :baseline-commit="profileBaselineCommit"
-    :test-case="props.testCase"
-  />
+  <CachegrindCmd :test-case="props.testCase" />
 </template>
 
 <style scoped lang="scss">

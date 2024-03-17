@@ -113,8 +113,6 @@ pub mod graphs {
         pub stat: String,
         pub kind: GraphKind,
         pub benchmark: Option<String>,
-        pub scenario: Option<String>,
-        pub profile: Option<String>,
     }
 
     #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -140,7 +138,7 @@ pub mod graphs {
     pub struct Response {
         // (UTC timestamp in seconds, sha)
         pub commits: Vec<(i64, String)>,
-        pub benchmarks: HashMap<String, HashMap<database::Profile, HashMap<String, Series>>>,
+        pub benchmarks: HashMap<String, Series>,
     }
 }
 
@@ -156,8 +154,6 @@ pub mod detail_graphs {
         pub end: Bound,
         pub stat: String,
         pub benchmark: String,
-        pub scenario: String,
-        pub profile: String,
         #[serde(deserialize_with = "vec_from_comma_separated")]
         pub kinds: Vec<GraphKind>,
     }
@@ -285,8 +281,7 @@ pub mod comparison {
 
         pub a: ArtifactDescription,
         pub b: ArtifactDescription,
-        pub compile_comparisons: Vec<CompileBenchmarkComparison>,
-        pub runtime_comparisons: Vec<RuntimeBenchmarkComparison>,
+        pub compile_comparisons: Vec<CompileTestCaseComparison>,
 
         pub new_errors: Vec<(String, String)>,
 
@@ -295,8 +290,7 @@ pub mod comparison {
 
         /// If `a` and `b` are adjacent artifacts (i.e., `a` is the parent of `b`).
         pub is_contiguous: bool,
-
-        pub compile_benchmark_metadata: Vec<CompileBenchmarkMetadata>,
+        // pub compile_benchmark_metadata: Vec<CompileBenchmarkMetadata>,
     }
 
     #[derive(Debug, Clone, Serialize)]
@@ -327,12 +321,15 @@ pub mod comparison {
 
     /// A serializable wrapper for a comparison between two compile-time test results.
     #[derive(Debug, Clone, Serialize)]
-    pub struct CompileBenchmarkComparison {
+    pub struct CompileTestCase {
         pub benchmark: String,
-        pub profile: String,
-        pub scenario: String,
-        pub backend: String,
+    }
+
+    #[derive(Debug, Clone, Serialize)]
+    pub struct CompileTestCaseComparison {
+        pub test_case: CompileTestCase,
         pub comparison: StatComparison,
+        pub percent: f64,
     }
 
     /// A serializable wrapper for a comparison between two runtime test results.

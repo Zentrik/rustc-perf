@@ -11,8 +11,6 @@ export async function loadGraphs(
     kind: selector.kind as string,
     stat: selector.stat,
     benchmark: selector.benchmark,
-    scenario: selector.scenario,
-    profile: selector.profile,
   };
   return await getJson<CompileGraphData>(GRAPH_DATA_URL, params);
 }

@@ -1,43 +1,14 @@
 <script setup lang="tsx">
-import {h, ref, Ref} from "vue";
-import {CompareResponse, Tab} from "./types";
-import {
-  diffClass,
-  formatPercentChange,
-  formatSize,
-  percentClass,
-} from "./shared";
+import {h} from "vue";
+import {percentClass} from "./shared";
 import {SummaryGroup} from "./data";
 import SummaryPercentValue from "./summary/percent-value.vue";
 import SummaryRange from "./summary/range.vue";
 import TabComponent from "../../components/tab.vue";
 
-const props = withDefaults(
-  defineProps<{
-    data: CompareResponse;
-    compileTimeSummary: SummaryGroup;
-    runtimeSummary: SummaryGroup;
-    initialTab?: Tab;
-  }>(),
-  {
-    initialTab: Tab.CompileTime,
-  }
-);
-const emit = defineEmits<{
-  (e: "changeTab", tab: Tab): void;
+const props = defineProps<{
+  compileTimeSummary: SummaryGroup;
 }>();
-
-function changeTab(tab: Tab) {
-  activeTab.value = tab;
-  emit("changeTab", tab);
-}
-
-function formatBootstrap(value: number): string {
-  if (value > 0.0) {
-    return (value / 10e8).toFixed(3);
-  }
-  return "???";
-}
 
 function SummaryTable({summary}: {summary: SummaryGroup}) {
   const valid = summary.all.count > 0;
@@ -70,30 +41,6 @@ function SummaryTable({summary}: {summary: SummaryGroup}) {
   }
   return <div>No results</div>;
 }
-
-function formatArtifactSize(size: number): string {
-  if (size === 0) {
-    return "???";
-  }
-  return formatSize(size);
-}
-
-const bootstrapA = props.data.a.bootstrap_total;
-const bootstrapB = props.data.b.bootstrap_total;
-const bootstrapValid = bootstrapA > 0.0 && bootstrapB > 0.0;
-
-const totalSizeA = Object.values(props.data.a.component_sizes).reduce(
-  (a, b) => a + b,
-  0
-);
-const totalSizeB = Object.values(props.data.b.component_sizes).reduce(
-  (a, b) => a + b,
-  0
-);
-const sizesAvailable = totalSizeA > 0 || totalSizeB > 0;
-const bothSizesAvailable = totalSizeA > 0 && totalSizeB > 0;
-
-const activeTab: Ref<Tab> = ref(props.initialTab);
 </script>
 
 <template>

@@ -32,8 +32,6 @@ const sharedMetrics: MetricDescription[] = [
   },
 ];
 
-export const importantCompileMetrics: MetricDescription[] = [
-  ...sharedMetrics,
-];
+export const importantCompileMetrics: MetricDescription[] = [...sharedMetrics];
 
 export const importantRuntimeMetrics: MetricDescription[] = [...sharedMetrics];

@@ -51,6 +51,6 @@ export function navigateToUrlParams(params: URLSearchParams) {
  */
 export function changeUrl(params: Dict<string>) {
   if (history.replaceState) {
-    history.replaceState({}, null, createUrlFromParams(params).toString());
+    history.replaceState({}, null, createUrlFromParams(params).toString()); // this seems to take about 1-200ms due to reflow
   }
 }

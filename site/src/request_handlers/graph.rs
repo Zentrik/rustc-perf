@@ -29,13 +29,12 @@ pub async fn handle_compile_detail_graphs(
         request.end,
     ));
 
-    let scenario = request.scenario.parse()?;
     let interpolated_responses: Vec<_> = ctxt
         .statistic_series(
             CompileBenchmarkQuery::default()
                 .benchmark(Selector::One(request.benchmark.clone()))
-                .profile(Selector::One(request.profile.parse()?))
-                .scenario(Selector::One(scenario))
+                .profile(Selector::All)
+                .scenario(Selector::All)
                 .metric(Selector::One(request.stat.parse()?)),
             artifact_ids.clone(),
         )
@@ -178,8 +177,6 @@ pub async fn handle_graphs(
             stat: String::from("min-wall-time"),
             kind: graphs::GraphKind::Raw,
             benchmark: None,
-            scenario: None,
-            profile: None,
         };
 
     if is_default_query {
@@ -217,16 +214,11 @@ async fn create_graphs(
     };
 
     let benchmark_selector = create_selector(&request.benchmark);
-    let profile_selector = create_selector(&request.profile).try_map(|v| v.parse::<Profile>())?;
-    let scenario_selector =
-        create_selector(&request.scenario).try_map(|v| v.parse::<Scenario>())?;
 
     let interpolated_responses: Vec<_> = ctxt
         .statistic_series(
             CompileBenchmarkQuery::default()
                 .benchmark(benchmark_selector)
-                .profile(profile_selector)
-                .scenario(scenario_selector)
                 .metric(Selector::One(request.stat.parse()?)),
             artifact_ids.clone(),
         )
@@ -235,29 +227,22 @@ async fn create_graphs(
         .map(|sr| sr.interpolate().map(|series| series.collect::<Vec<_>>()))
         .collect();
 
-    if request.benchmark.is_none() {
-        let request_profile = request
-            .profile
-            .as_ref()
-            .map(|p| p.parse::<Profile>())
-            .transpose()?;
-        let summary_benchmark =
-            create_summary(ctxt, &interpolated_responses, request.kind, request_profile)?;
-        benchmarks.insert("Summary".to_string(), summary_benchmark);
-    }
+    // if request.benchmark.is_none() {
+    //     let request_profile = request
+    //         .profile
+    //         .as_ref()
+    //         .map(|p| p.parse::<Profile>())
+    //         .transpose()?;
+    //     let summary_benchmark =
+    //         create_summary(ctxt, &interpolated_responses, request.kind, request_profile)?;
+    //     benchmarks.insert("Summary".to_string(), summary_benchmark);
+    // }
 
     for response in interpolated_responses {
         let benchmark = response.test_case.benchmark.to_string();
-        let profile = response.test_case.profile;
-        let scenario = response.test_case.scenario.to_string();
         let graph_series = graph_series(response.series.into_iter(), request.kind);
 
-        benchmarks
-            .entry(benchmark)
-            .or_insert_with(HashMap::new)
-            .entry(profile)
-            .or_insert_with(HashMap::new)
-            .insert(scenario, graph_series);
+        benchmarks.insert(benchmark, graph_series);
     }
 
     Ok(graphs::Response {
@@ -287,69 +272,66 @@ fn master_artifact_ids_for_range(ctxt: &SiteCtxt, start: Bound, end: Bound) -> V
 }
 
 #[allow(clippy::type_complexity)]
-/// Creates a summary "benchmark" that averages the results of all other
-/// test cases per profile type
-fn create_summary(
-    ctxt: &SiteCtxt,
-    interpolated_responses: &[SeriesResponse<
-        CompileTestCase,
-        Vec<((ArtifactId, Option<f64>), IsInterpolated)>,
-    >],
-    graph_kind: GraphKind,
-    profile: Option<Profile>,
-) -> ServerResult<HashMap<Profile, HashMap<String, graphs::Series>>> {
-    let mut baselines = HashMap::new();
-    let mut summary_benchmark = HashMap::new();
-    let summary_query_cases = iproduct!(
-        ctxt.summary_scenarios(),
-        profile.map_or_else(
-            || vec![Profile::Opt],
-            |p| vec![p]
-        )
-    );
-    for (scenario, profile) in summary_query_cases {
-        let baseline = match baselines.entry((profile, scenario)) {
-            std::collections::hash_map::Entry::Occupied(o) => *o.get(),
-            std::collections::hash_map::Entry::Vacant(v) => {
-                let baseline_responses = interpolated_responses
-                    .iter()
-                    .filter(|sr| {
-                        let p = sr.test_case.profile;
-                        let s = sr.test_case.scenario;
-                        p == profile && s == Scenario::Empty
-                    })
-                    .map(|sr| sr.series.iter().cloned())
-                    .collect();
+// Creates a summary "benchmark" that averages the results of all other
+// test cases per profile type
+// fn create_summary(
+//     ctxt: &SiteCtxt,
+//     interpolated_responses: &[SeriesResponse<
+//         CompileTestCase,
+//         Vec<((ArtifactId, Option<f64>), IsInterpolated)>,
+//     >],
+//     graph_kind: GraphKind,
+//     profile: Option<Profile>,
+// ) -> ServerResult<HashMap<Profile, HashMap<String, graphs::Series>>> {
+//     let mut baselines = HashMap::new();
+//     let mut summary_benchmark = HashMap::new();
+//     let summary_query_cases = iproduct!(
+//         ctxt.summary_scenarios(),
+//         profile.map_or_else(
+//             || vec![Profile::Opt],
+//             |p| vec![p]
+//         )
+//     );
+//     for (scenario, profile) in summary_query_cases {
+//         let baseline = match baselines.entry((profile, scenario)) {
+//             std::collections::hash_map::Entry::Occupied(o) => *o.get(),
+//             std::collections::hash_map::Entry::Vacant(v) => {
+//                 let baseline_responses = interpolated_responses
+//                     .iter()
+//                     .filter(|sr| {
+//                         let p = sr.test_case.profile;
+//                         let s = sr.test_case.scenario;
+//                         p == profile && s == Scenario::Empty
+//                     })
+//                     .map(|sr| sr.series.iter().cloned())
+//                     .collect();
 
-                let value = crate::average::average(baseline_responses)
-                    .next()
-                    .map_or(0.0, |((_c, d), _interpolated)| d.expect("interpolated"));
-                *v.insert(value)
-            }
-        };
+//                 let value = crate::average::average(baseline_responses)
+//                     .next()
+//                     .map_or(0.0, |((_c, d), _interpolated)| d.expect("interpolated"));
+//                 *v.insert(value)
+//             }
+//         };
 
-        let summary_case_responses = interpolated_responses
-            .iter()
-            .filter(|sr| {
-                let p = sr.test_case.profile;
-                let s = sr.test_case.scenario;
-                p == profile && s == scenario
-            })
-            .map(|sr| sr.series.iter().cloned())
-            .collect();
+//         let summary_case_responses = interpolated_responses
+//             .iter()
+//             .filter(|sr| {
+//                 let p = sr.test_case.profile;
+//                 let s = sr.test_case.scenario;
+//                 p == profile && s == scenario
+//             })
+//             .map(|sr| sr.series.iter().cloned())
+//             .collect();
 
-        let avg_vs_baseline = crate::average::average(summary_case_responses)
-            .map(|((c, d), i)| ((c, Some(d.expect("interpolated") / baseline)), i));
+//         let avg_vs_baseline = crate::average::average(summary_case_responses)
+//             .map(|((c, d), i)| ((c, Some(d.expect("interpolated") / baseline)), i));
 
-        let graph_series = graph_series(avg_vs_baseline, graph_kind);
+//         let graph_series = graph_series(avg_vs_baseline, graph_kind);
 
-        summary_benchmark
-            .entry(profile)
-            .or_insert_with(HashMap::new)
-            .insert(scenario.to_string(), graph_series);
-    }
-    Ok(summary_benchmark)
-}
+//         summary_benchmark.insert(scenario.to_string(), graph_series);
+//     }
+//     Ok(summary_benchmark)
+// }
 
 fn graph_series(
     points: impl Iterator<Item = ((ArtifactId, Option<f64>), IsInterpolated)>,

@@ -19,16 +19,12 @@ function loadSelectorFromUrl(urlParams: Dict<string>): GraphsSelector {
   const kind: GraphKind = (urlParams["kind"] as GraphKind) ?? "raw";
   const stat = urlParams["stat"] ?? "min-wall-time";
   const benchmark = urlParams["benchmark"] ?? null;
-  const scenario = urlParams["scenario"] ?? null;
-  const profile = urlParams["profile"] ?? null;
   return {
     start,
     end,
     kind,
     stat,
     benchmark,
-    scenario,
-    profile,
   };
 }
 
@@ -51,11 +47,7 @@ function filterBenchmarks(
  * will not be shown.
  */
 function hasSpecificSelection(selector: GraphsSelector): boolean {
-  return (
-    selector.benchmark !== null ||
-    selector.profile !== null ||
-    selector.scenario !== null
-  );
+  return selector.benchmark !== null;
 }
 
 async function loadGraphData(selector: GraphsSelector, loading: Ref<boolean>) {
@@ -154,8 +146,7 @@ loadGraphData(selector, loading);
     @change="updateSelection"
   ></DataSelector>
   <div>
-    See <a href="/">compare page</a> for descriptions of what the
-    names mean.
+    See <a href="/">compare page</a> for descriptions of what the names mean.
   </div>
   <div>
     <strong>Note:</strong> pink in the graphs represent data points that are

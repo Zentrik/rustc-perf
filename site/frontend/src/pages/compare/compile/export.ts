@@ -1,9 +1,8 @@
-import { computeSummary, TestCaseComparison } from "../data";
-import { CompileTestCase } from "./common";
+import {computeSummary, TestCaseComparison} from "../data";
+import {CompileTestCase} from "./common";
 
 export function exportToMarkdown(
   comparisons: TestCaseComparison<CompileTestCase>[],
-  showRawData: boolean = false
 ) {
   function changesTable(comparisons: TestCaseComparison<CompileTestCase>[]) {
     let columns = [
@@ -11,9 +10,6 @@ export function exportToMarkdown(
       "% Change",
       "Significance Factor",
     ];
-    if (showRawData) {
-      columns.push("Before", "After");
-    }
 
     const toMarkdownRow = (cells: string[]) => {
       return `| ${cells.join(" | ")} |\n`;
@@ -27,13 +23,10 @@ export function exportToMarkdown(
 
     for (const comparison of comparisons) {
       let cells = [
-        comparison.testCase.benchmark,
+        comparison.test_case.benchmark,
         `${comparison.percent.toFixed(2)}%`,
-        `${comparison.significanceFactor.toFixed(2)}x`,
+        `${comparison.comparison.significance_factor.toFixed(2)}x`,
       ];
-      if (showRawData) {
-        cells.push(comparison.datumA.toString(), comparison.datumB.toString());
-      }
 
       data += toMarkdownRow(cells);
     }
@@ -67,9 +60,7 @@ export function exportToMarkdown(
   )}% | ${all.count} |\n\n`;
 
   content += "# Benchmarks\n";
-  content += changesTable(
-    comparisons
-  );
+  content += changesTable(comparisons);
 
   downloadFile(content, "perf-summary.md");
 }

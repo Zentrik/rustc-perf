@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, capitalize, Ref, ref} from "vue";
+import {computed, onMounted, Ref, ref} from "vue";
 import {
   COMPILE_DETAIL_GRAPHS_RESOLVER,
   CompileDetailGraphs,
@@ -36,8 +36,6 @@ function createGraphsSelector(): CompileDetailGraphsSelector {
 
   return {
     benchmark: props.testCase.benchmark,
-    profile: props.testCase.profile,
-    scenario: props.testCase.scenario,
     stat: props.metric,
     start,
     end,
@@ -60,19 +58,11 @@ async function renderGraphs(detail: CompileDetailGraphs) {
     const data: CompileGraphData = {
       commits: detail.commits,
       benchmarks: {
-        [selector.benchmark]: {
-          // The server returns profiles capitalized, so we need to match that
-          // here, so that the graph code can find the expected profile.
-          [capitalize(selector.profile)]: {
-            [selector.scenario]: detail.graphs[index],
-          },
-        },
+        [selector.benchmark]: detail.graphs[index],
       },
     };
     const graphSelector = {
       benchmark: selector.benchmark,
-      profile: selector.profile,
-      scenario: selector.scenario,
       stat: selector.stat,
       start: selector.start,
       end: selector.end,
@@ -119,9 +109,8 @@ async function renderGraph(
   chartRef: Ref<HTMLElement | null>
 ) {
   const opts: GraphRenderOpts = {
-    width: Math.min(window.innerWidth - 40, 465),
+    width: Math.min(window.innerWidth / 2 - 40, 380),
     height: 300,
-    renderTitle: false,
   };
   if (date !== null) {
     drawCurrentDate(opts, date);
@@ -250,7 +239,7 @@ onMounted(() => {
           Each plotted value is relative to the first commit of the commit range
         </div>
         <div style="font-size: 0.8em">
-          The shaded region shows values that are more recent than the
+          The shaded region shows values more recent than the
           benchmarked commit
         </div>
       </div>
@@ -263,7 +252,7 @@ onMounted(() => {
           Each plotted value is relative to its previous commit
         </div>
         <div style="font-size: 0.8em">
-          The shaded region shows values that are more recent than the
+          The shaded region shows values more recent than the
           benchmarked commit
         </div>
       </div>

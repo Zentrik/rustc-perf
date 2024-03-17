@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import {TestCaseComparison} from "../../data";
+import {test_caseComparison} from "../../data";
 import Tooltip from "../../tooltip.vue";
 import {ArtifactDescription} from "../../types";
 import {percentClass} from "../../shared";
-import {CompileBenchmarkMap, CompileTestCase} from "../common";
+import {Compiletest_case} from "../common";
 import {computed} from "vue";
-import {testCaseKey} from "../common";
+import {test_caseKey} from "../common";
 import BenchmarkDetail from "./benchmark-detail.vue";
 import Accordion from "../../../../components/accordion.vue";
 
 const props = defineProps<{
   id: string;
-  comparisons: TestCaseComparison<CompileTestCase>[];
-  benchmarkMap: CompileBenchmarkMap;
+  comparisons: test_caseComparison<Compiletest_case>[];
   hasNonRelevant: boolean;
   showRawData: boolean;
   commitA: ArtifactDescription;
@@ -35,10 +34,10 @@ const columnCount = computed(() => {
 const unit = computed(() => {
   // The DB stored wall-time data in nanoseconds for compile benchmarks, so it is
   // hardcoded here
-  if (props.stat.split('-').pop() == "time") {
+  if (props.stat.split("-").pop() == "time") {
     return "ns";
   } else if (props.stat == "memory") {
-    return "B"
+    return "B";
   } else {
     return null;
   }
@@ -85,16 +84,11 @@ const unit = computed(() => {
       </thead>
       <tbody>
         <template v-for="comparison in comparisons">
-          <Accordion :id="testCaseKey(comparison.testCase)">
+          <Accordion :id="test_caseKey(comparison.test_case)">
             <template v-slot:default>
               <td>
-                {{ comparison.testCase.benchmark }}
+                {{ comparison.test_case.benchmark }}
               </td>
-              <td>
-                {{ comparison.testCase.profile }}
-              </td>
-              <td>{{ comparison.testCase.scenario }}</td>
-              <td>{{ comparison.testCase.backend }}</td>
               <td>
                 <div class="numeric-aligned">
                   <span v-bind:class="percentClass(comparison.percent)">
@@ -106,8 +100,10 @@ const unit = computed(() => {
                 <div class="numeric-aligned">
                   <div>
                     {{
-                      comparison.significanceThreshold
-                        ? comparison.significanceThreshold.toFixed(2) + "%"
+                      comparison.comparison.significance_threshold
+                        ? (
+                          100 * comparison.comparison.significance_threshold
+                        ).toFixed(2) + "%"
                         : "-"
                     }}
                   </div>
@@ -117,32 +113,31 @@ const unit = computed(() => {
                 <div class="numeric-aligned">
                   <div>
                     {{
-                      comparison.significanceFactor
-                        ? comparison.significanceFactor.toFixed(2) + "x"
+                      comparison.comparison.significance_factor
+                        ? comparison.comparison.significance_factor.toFixed(2) + "x"
                         : "-"
                     }}
                   </div>
                 </div>
               </td>
               <td v-if="showRawData" class="numeric">
-                <abbr :title="comparison.datumA.toString()">
-                  {{ prettifyRawNumber(comparison.datumA) }}{{ unit }}
+                <abbr :title="comparison.comparison.statistics[0].toString()">
+                  {{ prettifyRawNumber(comparison.comparison.statistics[0]) }}{{ unit }}
                 </abbr>
               </td>
               <td v-if="showRawData" class="numeric">
-                <abbr :title="comparison.datumB.toString()">
-                  {{ prettifyRawNumber(comparison.datumB) }}{{ unit }}
+                <abbr :title="comparison.comparison.statistics[1].toString()">
+                  {{ prettifyRawNumber(comparison.comparison.statistics[1]) }}{{ unit }}
                 </abbr>
               </td>
             </template>
             <template v-slot:expanded>
               <td :colspan="columnCount">
                 <BenchmarkDetail
-                  :test-case="comparison.testCase"
+                  :test-case="comparison.test_case"
                   :base-artifact="commitA"
                   :artifact="commitB"
                   :metric="stat"
-                  :benchmark-map="benchmarkMap"
                 />
               </td>
             </template>
