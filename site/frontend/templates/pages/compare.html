@@ -81,3 +81,6 @@
 {% block script %}
 <script src="scripts/compare.js"></script>
 {% endblock %}
+{% block preload %}
+<link rel="preload" href="/perf/info" as="fetch" crossorigin />
+{% endblock %}
