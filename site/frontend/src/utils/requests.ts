@@ -1,5 +1,11 @@
 import { decodeAsync } from "@msgpack/msgpack";
 
+declare global {
+  interface Window {
+    __DATA_LOADER_CACHE__?: any;
+  }
+}
+
 export async function postJson<T>(path: string, body: any): Promise<T> {
   const response = await fetch(path, {
     method: "POST",
@@ -29,11 +35,11 @@ export async function getJson<T>(
 }
 
 export async function postMsgpack<T>(path: string, body: any): Promise<T> {
-  const response = await fetch(path, {
+  const response = await (window.__DATA_LOADER_CACHE__ || fetch(path, {
     method: "POST",
     body: JSON.stringify(body),
     mode: "cors",
-  });
+  }));
   if (response.ok) {
     return await decodeAsync(response.body) as T;
   } else {
