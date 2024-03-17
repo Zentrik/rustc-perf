@@ -1,8 +1,5 @@
-import {
-  CompileBenchmarkComparison,
-  CompileBenchmarkMetadata,
-} from "./compile/common";
-import {RuntimeBenchmarkComparison} from "./runtime/common";
+import {CompileTestCase} from "./compile/common";
+import {TestCaseComparison} from "./data";
 
 export interface BenchmarkFilter {
   name: string | null;
@@ -35,6 +32,7 @@ export interface StatComparison {
   statistics: [number, number];
 }
 
+export interface CompareResponse extends TestCaseComparison<CompileTestCase> {}
 export interface CompareResponse {
   prev: string | null;
   next: string | null;
@@ -45,15 +43,5 @@ export interface CompareResponse {
 
   new_errors: Array<[string, string]>;
 
-  compile_comparisons: CompileBenchmarkComparison[];
-  compile_benchmark_metadata: CompileBenchmarkMetadata[];
-
-  runtime_comparisons: RuntimeBenchmarkComparison[];
-}
-
-export enum Tab {
-  CompileTime = "compile",
-  Runtime = "runtime",
-  Bootstrap = "bootstrap",
-  ArtifactSize = "artifact-size",
+  compile_comparisons: TestCaseComparison<CompileTestCase>[];
 }

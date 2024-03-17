@@ -2,33 +2,21 @@
 import {loadBenchmarkInfo} from "../../api";
 import AsOf from "../../components/as-of.vue";
 import {
-  changeUrl,
   createUrlWithAppendedParams,
   getUrlParams,
   navigateToUrlParams,
 } from "../../utils/navigation";
-import {computed, Ref, ref} from "vue";
+import {Ref, ref} from "vue";
 import {withLoading} from "../../utils/loading";
 import {postMsgpack} from "../../utils/requests";
 import {COMPARE_DATA_URL} from "../../urls";
-import {CompareResponse, CompareSelector, Tab} from "./types";
-import BootstrapTable from "./bootstrap/bootstrap-table.vue";
+import {CompareResponse, CompareSelector} from "./types";
 import Header from "./header/header.vue";
-import DataSelector, {SelectionParams} from "./header/data-selector.vue";
 import {computeSummary, filterNonRelevant, SummaryGroup} from "./data";
-import Tabs from "./tabs.vue";
+import DataSelector, {SelectionParams} from "./header/data-selector.vue";
 import CompileBenchmarksPage from "./compile/compile-page.vue";
-import {
-  computeCompileComparisonsWithNonRelevant,
-  createCompileBenchmarkMap,
-  defaultCompileFilter as defaultCompileFilter,
-} from "./compile/common";
-import RuntimeBenchmarksPage from "./runtime/runtime-page.vue";
-import {
-  computeRuntimeComparisonsWithNonRelevant,
-  defaultRuntimeFilter,
-} from "./runtime/common";
-import ArtifactSizeTable from "./artifact-size/artifact-size-table.vue";
+import {defaultCompileFilter as defaultCompileFilter} from "./compile/common";
+import Tabs from "./tabs.vue";
 
 function loadSelectorFromUrl(urlParams: Dict<string>): CompareSelector {
   const start = urlParams["start"] ?? "";
@@ -39,22 +27,6 @@ function loadSelectorFromUrl(urlParams: Dict<string>): CompareSelector {
     end,
     stat,
   };
-}
-
-function loadTabFromUrl(urlParams: Dict<string>): Tab | null {
-  const tab = urlParams["tab"] ?? "";
-  const tabs = {
-    compile: Tab.CompileTime,
-    runtime: Tab.Runtime,
-    bootstrap: Tab.Bootstrap,
-    ["artifact-size"]: Tab.ArtifactSize,
-  };
-  return tabs[tab] ?? null;
-}
-
-function storeTabToUrl(urlParams: Dict<string>, tab: Tab) {
-  urlParams["tab"] = tab as string;
-  changeUrl(urlParams);
 }
 
 async function loadCompareData(
@@ -72,23 +44,7 @@ async function loadCompareData(
   data.value = response;
 
   compileSummary.value = computeSummary(
-    filterNonRelevant(
-      defaultCompileFilter,
-      computeCompileComparisonsWithNonRelevant(
-        defaultCompileFilter,
-        response.compile_comparisons,
-        createCompileBenchmarkMap(response)
-      )
-    )
-  );
-  runtimeSummary.value = computeSummary(
-    filterNonRelevant(
-      defaultRuntimeFilter,
-      computeRuntimeComparisonsWithNonRelevant(
-        defaultRuntimeFilter,
-        response.runtime_comparisons
-      )
-    )
+    filterNonRelevant(defaultCompileFilter, response.compile_comparisons)
   );
 }
 
@@ -104,39 +60,17 @@ function updateSelection(params: SelectionParams) {
 
 const urlParams = getUrlParams();
 
-// Include all relevant changes in the compile-time and runtime tab summaries.
+// Include all relevant changes in the compile-time.
 // We do not wrap these summaries in `computed`, because they should be loaded
 // only once, after the compare data is downloaded.
 const compileSummary: Ref<SummaryGroup | null> = ref(null);
-const runtimeSummary: Ref<SummaryGroup | null> = ref(null);
 
 const loading = ref(false);
 
 const selector = loadSelectorFromUrl(urlParams);
 
-const initialTab: Tab = loadTabFromUrl(urlParams) ?? Tab.CompileTime;
-const tab: Ref<Tab> = ref(initialTab);
-const activeTab = computed((): Tab => {
-  if (tab.value === Tab.ArtifactSize && !artifactSizeAvailable.value) {
-    return Tab.CompileTime;
-  }
-  return tab.value;
-});
-
-const artifactSizeAvailable = computed(
-  () =>
-    data.value != null &&
-    (Object.keys(data.value.a.component_sizes).length > 0 ||
-      Object.keys(data.value.b.component_sizes).length > 0)
-);
-
-function changeTab(newTab: Tab) {
-  tab.value = newTab;
-  storeTabToUrl(getUrlParams(), newTab);
-}
-
 const data: Ref<CompareResponse | null> = ref(null);
-loadCompareData(selector, loading);
+await loadCompareData(selector, loading);
 let info = await loadBenchmarkInfo();
 </script>
 
@@ -154,31 +88,12 @@ let info = await loadBenchmarkInfo();
       <p>Loading ...</p>
     </div>
     <div v-if="data !== null">
-      <Tabs
-        @change-tab="changeTab"
+      <Tabs :compile-time-summary="compileSummary" />
+      <CompileBenchmarksPage
         :data="data"
-        :initial-tab="initialTab"
-        :compile-time-summary="compileSummary"
-        :runtime-summary="runtimeSummary"
+        :selector="selector"
+        :benchmark-info="info"
       />
-      <template v-if="activeTab === Tab.CompileTime">
-        <CompileBenchmarksPage
-          :data="data"
-          :selector="selector"
-          :benchmark-info="info"
-        />
-      </template>
-      <template v-if="activeTab === Tab.Runtime">
-        <RuntimeBenchmarksPage
-          :data="data"
-          :selector="selector"
-          :benchmark-info="info"
-        />
-      </template>
-      <BootstrapTable v-if="activeTab === Tab.Bootstrap" :data="data" />
-      <template v-if="artifactSizeAvailable && activeTab === Tab.ArtifactSize">
-        <ArtifactSizeTable :a="data.a" :b="data.b" />
-      </template>
     </div>
   </div>
   <br />

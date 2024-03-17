@@ -1,4 +1,4 @@
-import { decodeAsync } from "@msgpack/msgpack";
+import {decodeAsync} from "@msgpack/msgpack";
 
 declare global {
   interface Window {
@@ -35,13 +35,14 @@ export async function getJson<T>(
 }
 
 export async function postMsgpack<T>(path: string, body: any): Promise<T> {
-  const response = await (window.__DATA_LOADER_CACHE__ || fetch(path, {
-    method: "POST",
-    body: JSON.stringify(body),
-    mode: "cors",
-  }));
+  const response = await (window.__DATA_LOADER_CACHE__ ||
+    fetch(path, {
+      method: "POST",
+      body: JSON.stringify(body),
+      mode: "cors",
+    }));
   if (response.ok) {
-    return await decodeAsync(response.body) as T;
+    return (await decodeAsync(response.body)) as T;
   } else {
     const text = await response.text();
     alert(text);

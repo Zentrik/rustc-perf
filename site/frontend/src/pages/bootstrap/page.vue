@@ -64,8 +64,7 @@ loadBootstrapData(selector, loading);
   </div>
   <div v-else>
     <div>
-      See <a href="/">compare page</a> for descriptions of what the
-      names mean.
+      See <a href="/">compare page</a> for descriptions of what the names mean.
     </div>
     <div id="byCrateChart"></div>
     <div id="totalChart"></div>

@@ -11,8 +11,6 @@ export interface CompileDetailGraphsSelector {
   end: string;
   stat: string;
   benchmark: string;
-  scenario: string;
-  profile: string;
   kinds: GraphKind[];
 }
 
@@ -29,8 +27,6 @@ export interface CompileDetailSectionsSelector {
   start: string;
   end: string;
   benchmark: string;
-  scenario: string;
-  profile: string;
 }
 
 export interface CompileDetailSections {
@@ -62,7 +58,7 @@ export const COMPILE_DETAIL_GRAPHS_RESOLVER: CachedDataLoader<
   CompileDetailGraphs
 > = new CachedDataLoader(
   (key: CompileDetailGraphsSelector) =>
-    `${key.benchmark};${key.profile};${key.scenario};${key.start};${key.end};${key.stat};${key.kinds}`,
+    `${key.benchmark};;${key.start};${key.end};${key.stat};${key.kinds}`,
   loadGraphsDetail
 );
 
@@ -74,8 +70,6 @@ async function loadGraphsDetail(
     end: selector.end,
     stat: selector.stat,
     benchmark: selector.benchmark,
-    scenario: selector.scenario,
-    profile: selector.profile,
     kinds: selector.kinds.join(","),
   };
   return await getJson<CompileDetailGraphs>(
@@ -90,7 +84,7 @@ export const COMPILE_DETAIL_SECTIONS_RESOLVER: CachedDataLoader<
   CompileDetailSections
 > = new CachedDataLoader(
   (key: CompileDetailGraphsSelector) =>
-    `${key.benchmark};${key.profile};${key.scenario};${key.start};${key.end}`,
+    `${key.benchmark};${key.start};${key.end}`,
   loadSectionsDetail
 );
 
@@ -101,8 +95,6 @@ async function loadSectionsDetail(
     start: selector.start,
     end: selector.end,
     benchmark: selector.benchmark,
-    scenario: selector.scenario,
-    profile: selector.profile,
   };
   return await getJson<CompileDetailSections>(
     COMPARE_COMPILE_DETAIL_SECTIONS_DATA_URL,

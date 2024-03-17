@@ -1,19 +1,18 @@
-import { computeSummary, TestCaseComparison } from "../data";
-import { CompileTestCase } from "./common";
+import {computeSummary, TestCaseComparison} from "../data";
+import {CompileTestCase} from "./common";
 
 export function exportToMarkdown(
   comparisons: TestCaseComparison<CompileTestCase>[]
 ) {
   function changesTable(comparisons: TestCaseComparison<CompileTestCase>[]) {
-    let data =
-      "| Benchmark | % Change | Significance Factor |\n";
+    let data = "| Benchmark | % Change | Significance Factor |\n";
     data += "|:---:|:---:|:---:|\n";
 
     for (const comparison of comparisons) {
-      data += `| ${comparison.testCase.benchmark} `;
+      data += `| ${comparison.test_case.benchmark} `;
       data += `| ${comparison.percent.toFixed(
         2
-      )}% | ${comparison.significanceFactor.toFixed(2)}x\n`;
+      )}% | ${comparison.comparison.significance_factor.toFixed(2)}x\n`;
     }
 
     return data;
@@ -45,9 +44,7 @@ export function exportToMarkdown(
   )}% | ${all.count} |\n\n`;
 
   content += "# Benchmarks\n";
-  content += changesTable(
-    comparisons
-  );
+  content += changesTable(comparisons);
 
   downloadFile(content, "perf-summary.md");
 }
