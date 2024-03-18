@@ -3,19 +3,19 @@ import MetricSelector from "../metric-selector.vue";
 import Filters from "./filters.vue";
 import OverallSummary from "../summary/overall-summary.vue";
 import Benchmarks from "./benchmarks.vue";
-import {CompareResponse, CompareSelector} from "../types";
-import {computed, ref} from "vue";
-import {changeUrl, getUrlParams} from "../../../utils/navigation";
-import {exportToMarkdown} from "./export";
-import {computeSummary, filterNonRelevant} from "../data";
+import { CompareResponse, CompareSelector } from "../types";
+import { computed, ref } from "vue";
+import { changeUrl, getUrlParams } from "../../../utils/navigation";
+import { exportToMarkdown } from "./export";
+import { computeSummary, filterNonRelevant } from "../data";
 import {
   CompileBenchmarkFilter,
   shouldShowTestCase,
   defaultCompileFilter,
 } from "./common";
-import {BenchmarkInfo} from "../../../api";
-import {importantCompileMetrics} from "../metrics";
-import {getBoolOrDefault} from "../shared";
+import { BenchmarkInfo } from "../../../api";
+import { importantCompileMetrics } from "../metrics";
+import { getBoolOrDefault } from "../shared";
 
 const props = defineProps<{
   data: CompareResponse;
@@ -114,24 +114,9 @@ const filteredSummary = computed(() => computeSummary(comparisons.value));
 </script>
 
 <template>
-  <MetricSelector
-    :key="quickLinksKey"
-    :quick-links="importantCompileMetrics"
-    :selected-metric="selector.stat"
-    :metrics="benchmarkInfo.compile_metrics"
-  />
-  <Filters
-    :defaultFilter="defaultCompileFilter"
-    :initialFilter="filter"
-    @change="updateFilter"
-    @export="exportData"
-  />
+  <MetricSelector :key="quickLinksKey" :quick-links="importantCompileMetrics" :selected-metric="selector.stat"
+    :metrics="benchmarkInfo.compile_metrics" />
+  <Filters :defaultFilter="defaultCompileFilter" :initialFilter="filter" @change="updateFilter" @export="exportData" />
   <OverallSummary :summary="filteredSummary" />
-  <Aggregations :cases="comparisons" />
-  <Benchmarks
-    :data="data"
-    :test-cases="comparisons"
-    :filter="filter"
-    :stat="selector.stat"
-  ></Benchmarks>
+  <Benchmarks :data="data" :test-cases="comparisons" :filter="filter" :stat="selector.stat"></Benchmarks>
 </template>
