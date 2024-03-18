@@ -43,31 +43,31 @@ export function computeSummary<Case extends {benchmark: string}>(
   let regressions: Summary = {
     count: 0,
     average: 0,
-    range: [100, 0],
+    range: [Infinity, 0],
   };
 
   let improvements: Summary = {
     count: 0,
     average: 0,
-    range: [0, -100],
+    range: [0, -Infinity],
   };
 
   let all: Summary = {
     count: comparisons.length,
     average: 0,
-    range: [100, 0],
+    range: [0, 0],
   };
 
   for (const testCase of comparisons) {
-    if (testCase.percent > 0) {
+    if (testCase.percent < 0) {
       improvements.count++;
       improvements.range[0] = Math.min(improvements.range[0], testCase.percent);
       improvements.range[1] = Math.max(improvements.range[1], testCase.percent);
       improvements.average += testCase.percent;
-    } else if (testCase.percent < 0) {
+    } else if (testCase.percent > 0) {
       regressions.count++;
-      regressions.range[0] = Math.max(regressions.range[0], testCase.percent);
-      regressions.range[1] = Math.min(regressions.range[1], testCase.percent);
+      regressions.range[0] = Math.min(regressions.range[0], testCase.percent);
+      regressions.range[1] = Math.max(regressions.range[1], testCase.percent);
       regressions.average += testCase.percent;
     }
     all.range[0] = Math.min(all.range[0], testCase.percent);
@@ -80,13 +80,10 @@ export function computeSummary<Case extends {benchmark: string}>(
   all.average = all.average / Math.max(1, all.count);
 
   if (improvements.count === 0) {
-    improvements.range[0] = 0;
+    improvements.range[1] = 0;
   }
   if (regressions.count === 0) {
     regressions.range[1] = 0;
-  }
-  if (all.count === 0) {
-    all.range[0] = 0;
   }
 
   return {
