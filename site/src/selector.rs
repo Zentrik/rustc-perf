@@ -141,15 +141,15 @@ impl<T> Selector<T> {
             Selector::One(o) => Selector::One(f(o)),
         }
     }
-    pub fn try_map<U, E>(self, mut f: impl FnMut(T) -> Result<U, E>) -> Result<Selector<U>, E> {
-        Ok(match self {
-            Selector::All => Selector::All,
-            Selector::Subset(subset) => {
-                Selector::Subset(subset.into_iter().map(f).collect::<Result<_, _>>()?)
-            }
-            Selector::One(o) => Selector::One(f(o)?),
-        })
-    }
+    // pub fn try_map<U, E>(self, mut f: impl FnMut(T) -> Result<U, E>) -> Result<Selector<U>, E> {
+    //     Ok(match self {
+    //         Selector::All => Selector::All,
+    //         Selector::Subset(subset) => {
+    //             Selector::Subset(subset.into_iter().map(f).collect::<Result<_, _>>()?)
+    //         }
+    //         Selector::One(o) => Selector::One(f(o)?),
+    //     })
+    // }
 
     fn matches<U>(&self, other: U) -> bool
     where
@@ -350,24 +350,24 @@ pub struct RuntimeBenchmarkQuery {
     metric: Selector<database::Metric>,
 }
 
-impl RuntimeBenchmarkQuery {
-    pub fn benchmark(mut self, selector: Selector<String>) -> Self {
-        self.benchmark = selector;
-        self
-    }
+// impl RuntimeBenchmarkQuery {
+//     pub fn benchmark(mut self, selector: Selector<String>) -> Self {
+//         self.benchmark = selector;
+//         self
+//     }
 
-    pub fn metric(mut self, selector: Selector<Metric>) -> Self {
-        self.metric = selector.map(|v| v.as_str().into());
-        self
-    }
+//     pub fn metric(mut self, selector: Selector<Metric>) -> Self {
+//         self.metric = selector.map(|v| v.as_str().into());
+//         self
+//     }
 
-    pub fn all_for_metric(metric: Metric) -> Self {
-        Self {
-            benchmark: Selector::All,
-            metric: Selector::One(metric.as_str().into()),
-        }
-    }
-}
+//     pub fn all_for_metric(metric: Metric) -> Self {
+//         Self {
+//             benchmark: Selector::All,
+//             metric: Selector::One(metric.as_str().into()),
+//         }
+//     }
+// }
 
 impl Default for RuntimeBenchmarkQuery {
     fn default() -> Self {

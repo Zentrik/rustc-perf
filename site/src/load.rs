@@ -7,7 +7,6 @@ use std::time::Instant;
 use arc_swap::{ArcSwap, Guard};
 use chrono::{Duration, Utc};
 use lazy_static::lazy_static;
-use log::error;
 use parking_lot::Mutex;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
