@@ -1,8 +1,8 @@
 <script setup lang="tsx">
 import ComparisonsTable from "./table/comparisons-table.vue";
-import { TestCaseComparison } from "../data";
-import { CompareResponse } from "../types";
-import { CompileBenchmarkFilter, CompileTestCase } from "./common";
+import {TestCaseComparison} from "../data";
+import {CompareResponse} from "../types";
+import {CompileBenchmarkFilter, CompileTestCase} from "./common";
 
 export interface BenchmarkProps {
   data: CompareResponse;
@@ -24,9 +24,15 @@ const props = defineProps<BenchmarkProps>();
       </details>
       <hr />
     </div>
-    <ComparisonsTable id="primary-benchmarks" :comparisons="props.testCases"
-      :has-non-relevant="props.testCases.length > 0" :show-raw-data="filter.showRawData" :commit-a="data.a"
-      :commit-b="data.b" :stat="stat">
+    <ComparisonsTable
+      id="primary-benchmarks"
+      :comparisons="props.testCases"
+      :has-non-relevant="props.testCases.length > 0"
+      :show-raw-data="filter.showRawData"
+      :commit-a="data.a"
+      :commit-b="data.b"
+      :stat="stat"
+    >
     </ComparisonsTable>
     <hr />
   </div>

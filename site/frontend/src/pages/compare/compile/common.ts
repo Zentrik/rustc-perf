@@ -3,7 +3,7 @@ import {TestCaseComparison} from "../data";
 
 declare global {
   interface Window {
-    __NON_RELEVANT_CACHE__?: any;
+    __NON_RELEVANT_NO_NAME_FILTER_CACHE__?: any;
   }
 }
 

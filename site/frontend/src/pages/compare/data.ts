@@ -25,12 +25,16 @@ export function filterNonRelevant<Case>(
   if (filter.nonRelevant) {
     return cases;
   }
-  if (!window.__NON_RELEVANT_CACHE__) {
-    window.__NON_RELEVANT_CACHE__ = cases.filter(
-      (c) => c.comparison.is_relevant
-    );
+  if (filter.name) {
+    return cases.filter((c) => c.comparison.is_relevant);
+  } else {
+    if (!window.__NON_RELEVANT_NO_NAME_FILTER_CACHE__) {
+      window.__NON_RELEVANT_NO_NAME_FILTER_CACHE__ = cases.filter(
+        (c) => c.comparison.is_relevant
+      );
+    }
+    return window.__NON_RELEVANT_NO_NAME_FILTER_CACHE__;
   }
-  return window.__NON_RELEVANT_CACHE__;
 }
 
 /**
