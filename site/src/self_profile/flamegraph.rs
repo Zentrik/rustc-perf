@@ -16,8 +16,8 @@ pub fn generate(title: &str, self_profile_data: Vec<u8>, _: Opt) -> anyhow::Resu
 
     let mut file = Vec::new();
     let mut flamegraph_options = FlamegraphOptions::default();
-    flamegraph_options.count_name = "nanoseconds".to_owned();
-    flamegraph_options.title = title.to_owned();
+    "nanoseconds".clone_into(&mut flamegraph_options.count_name);
+    title.clone_into(&mut flamegraph_options.title);
     flamegraph_options.min_width = 0.0;
 
     from_lines(

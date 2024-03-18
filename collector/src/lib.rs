@@ -200,9 +200,9 @@ fn run_command_with_output(cmd: &mut Command) -> anyhow::Result<process::Output>
                 }
             }
             if is_stdout {
-                stdout = buffer.clone();
+                stdout.clone_from(buffer);
             } else {
-                stderr = buffer.clone();
+                stderr.clone_from(buffer);
             }
         },
     )?;

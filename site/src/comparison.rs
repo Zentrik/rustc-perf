@@ -16,8 +16,6 @@ use database::{ArtifactId, Benchmark, Lookup, Profile, Scenario};
 use serde::Serialize;
 use itertools::Itertools;
 
-use crate::api::comparison::CompileBenchmarkMetadata;
-use crate::benchmark_metadata::get_compile_benchmarks_metadata;
 use crate::server::comparison::StatComparison;
 use collector::compile::benchmark::ArtifactType;
 use database::{CodegenBackend, CommitType, CompileBenchmark};
@@ -167,7 +165,7 @@ pub async fn handle_compare(
                     benchmark: comparison.benchmark.to_string(),
                 },
                 comparison: comparison.comparison.into(),
-                percent: percent,
+                percent,
             }
         })
         // Sort by name first, so that there is a canonical ordering
@@ -890,7 +888,7 @@ pub struct ArtifactDescription {
     pub component_sizes: HashMap<String, u64>,
 }
 
-type StatisticsMap<TestCase> = HashMap<TestCase, f64>;
+// type StatisticsMap<TestCase> = HashMap<TestCase, f64>;
 
 impl ArtifactDescription {
     /// For the given `ArtifactId`, consume the first datapoint in each of the given `SeriesResponse`
@@ -900,7 +898,7 @@ impl ArtifactDescription {
     async fn for_artifact(
         conn: &dyn database::Connection,
         artifact: ArtifactId,
-        master_commits: &[collector::MasterCommit],
+        _master_commits: &[collector::MasterCommit],
     ) -> Self {
         let aid = conn.artifact_id(&artifact).await;
         let bootstrap = conn.get_bootstrap_by_crate(&[aid]).await;
@@ -949,25 +947,25 @@ impl ArtifactDescription {
     }
 }
 
-fn statistics_from_series<Case: TestCase, T>(
-    series: &mut [selector::SeriesResponse<Case, T>],
-) -> StatisticsMap<Case>
-where
-    T: Iterator<Item = (ArtifactId, Option<f64>)>,
-{
-    let mut stats: StatisticsMap<Case> = HashMap::new();
-    for response in series {
-        let (_, point) = response.series.next().expect("must have element");
+// fn statistics_from_series<Case: TestCase, T>(
+//     series: &mut [selector::SeriesResponse<Case, T>],
+// ) -> StatisticsMap<Case>
+// where
+//     T: Iterator<Item = (ArtifactId, Option<f64>)>,
+// {
+//     let mut stats: StatisticsMap<Case> = HashMap::new();
+//     for response in series {
+//         let (_, point) = response.series.next().expect("must have element");
 
-        let value = if let Some(v) = point {
-            v
-        } else {
-            continue;
-        };
-        stats.insert(response.test_case.clone(), value);
-    }
-    stats
-}
+//         let value = if let Some(v) = point {
+//             v
+//         } else {
+//             continue;
+//         };
+//         stats.insert(response.test_case.clone(), value);
+//     }
+//     stats
+// }
 
 impl From<ArtifactDescription> for api::comparison::ArtifactDescription {
     fn from(data: ArtifactDescription) -> Self {
@@ -1019,7 +1017,7 @@ impl ArtifactComparison {
     pub async fn is_contiguous(
         &self,
         conn: &dyn database::Connection,
-        master_commits: &[collector::MasterCommit],
+        _master_commits: &[collector::MasterCommit],
     ) -> bool {
         match (&self.a.artifact, &self.b.artifact) {
             (ArtifactId::Commit(a), ArtifactId::Commit(b)) => {
@@ -1113,7 +1111,7 @@ impl HistoricalDataMap {
         .for_each(|sid_to_value| {
             sid_to_value.iter().for_each(|(sid, value)| {
                 let test_case = CompileTestCase {
-                    benchmark: sid_to_benchmark.get(sid).unwrap().clone(),
+                    benchmark: *sid_to_benchmark.get(sid).unwrap(),
                     scenario: Scenario::Empty,
                     profile: Profile::Opt,
                     backend: CodegenBackend::Llvm,
