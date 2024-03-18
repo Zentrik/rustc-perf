@@ -391,7 +391,7 @@ impl ConnectionManager for Sqlite {
     type Connection = Mutex<rusqlite::Connection>;
     async fn open(&self) -> Self::Connection {
         let mut conn = rusqlite::Connection::open(&self.0).unwrap();
-        conn.pragma_update(None, "cache_size", -128000).unwrap();
+        conn.pragma_update(None, "cache_size", -1280000).unwrap();
         conn.pragma_update(None, "journal_mode", "WAL").unwrap();
         conn.pragma_update(None, "foreign_keys", "ON").unwrap();
 

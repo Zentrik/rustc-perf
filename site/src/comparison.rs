@@ -855,7 +855,7 @@ fn previous_commits(
 
     if let ArtifactId::Commit(c) = from {
         let mut end_date = c.date.0;
-        while prevs.len() < n && c.date.0 - end_date <= chrono::Duration::days(30) {
+        while prevs.len() < 2 * n && c.date.0 - end_date <= chrono::Duration::days(30) {
             let latest_prev_commit_opt = master_commits
                 .iter()
                 .filter(|m| m.time < end_date)
@@ -1070,7 +1070,7 @@ pub struct HistoricalDataMap {
 }
 
 impl HistoricalDataMap {
-    const NUM_PREVIOUS_COMMITS: usize = 5;
+    const NUM_PREVIOUS_COMMITS: usize = 3;
 
     async fn calculate(
         ctxt: &SiteCtxt,
