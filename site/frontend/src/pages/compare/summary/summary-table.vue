@@ -49,10 +49,7 @@ const summary = computed(() => props.summary);
             <SummaryPercentValue :value="summary.regressions.average" />
           </td>
           <td class="positive">
-            <SummaryCount
-              :cases="summary.regressions.count"
-              :benchmarks="summary.regressions.benchmarks"
-            />
+            <SummaryCount :cases="summary.regressions.count" />
           </td>
         </template>
         <template v-else>
@@ -69,10 +66,7 @@ const summary = computed(() => props.summary);
             <SummaryPercentValue :value="summary.improvements.average" />
           </td>
           <td class="negative">
-            <SummaryCount
-              :cases="summary.improvements.count"
-              :benchmarks="summary.improvements.benchmarks"
-            />
+            <SummaryCount :cases="summary.improvements.count" />
           </td>
         </template>
         <template v-else>
@@ -88,10 +82,7 @@ const summary = computed(() => props.summary);
           <SummaryPercentValue :value="summary.all.average" />
         </td>
         <td>
-          <SummaryCount
-            :cases="summary.all.count"
-            :benchmarks="summary.all.benchmarks"
-          />
+          <SummaryCount :cases="summary.all.count" />
         </td>
       </tr>
     </tbody>
@@ -103,6 +94,7 @@ const summary = computed(() => props.summary);
   td {
     text-align: right;
   }
+
   td,
   th {
     padding: 2px 5px;

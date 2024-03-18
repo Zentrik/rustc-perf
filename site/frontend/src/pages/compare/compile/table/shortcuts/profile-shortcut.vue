@@ -6,8 +6,7 @@
  * and display a diff.
  **/
 
-
- import {CompileTestCase} from "../../common";
+import {CompileTestCase} from "../../common";
 import Tooltip from "../../../tooltip.vue";
 import CachegrindCmd from "./cachegrind-cmd.vue";
 
