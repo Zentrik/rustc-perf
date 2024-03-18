@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import {test_caseComparison} from "../../data";
+import {TestCaseComparison} from "../../data";
 import Tooltip from "../../tooltip.vue";
 import {ArtifactDescription} from "../../types";
 import {percentClass} from "../../shared";
-import {Compiletest_case} from "../common";
+import {CompileTestCase} from "../common";
 import {computed} from "vue";
-import {test_caseKey} from "../common";
+import {testCaseKey} from "../common";
 import BenchmarkDetail from "./benchmark-detail.vue";
 import Accordion from "../../../../components/accordion.vue";
 
 const props = defineProps<{
   id: string;
-  comparisons: test_caseComparison<Compiletest_case>[];
+  comparisons: TestCaseComparison<CompileTestCase>[];
   hasNonRelevant: boolean;
   showRawData: boolean;
   commitA: ArtifactDescription;
@@ -63,10 +63,8 @@ const unit = computed(() => {
               the significance threshold, the noisier a test case is. You can
               see
               <a
-                href="https://github.com/rust-lang/rustc-perf/blob/master/docs/comparison-analysis.md#what-makes-a-test-result-significant"
-              >
-                here</a
-              >
+                href="https://github.com/rust-lang/rustc-perf/blob/master/docs/comparison-analysis.md#what-makes-a-test-result-significant">
+                here</a>
               how the significance threshold is calculated.
             </Tooltip>
           </th>
@@ -84,7 +82,7 @@ const unit = computed(() => {
       </thead>
       <tbody>
         <template v-for="comparison in comparisons">
-          <Accordion :id="test_caseKey(comparison.test_case)">
+          <Accordion :id="testCaseKey(comparison.test_case)">
             <template v-slot:default>
               <td>
                 {{ comparison.test_case.benchmark }}
@@ -176,6 +174,7 @@ const unit = computed(() => {
 }
 
 .benches {
+
   td,
   th {
     text-align: center;
@@ -187,14 +186,14 @@ const unit = computed(() => {
 }
 
 .benches td {
-  & > .numeric-aligned {
+  &>.numeric-aligned {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: right;
 
-    & > div,
-    & > span {
+    &>div,
+    &>span {
       width: 70px;
     }
   }

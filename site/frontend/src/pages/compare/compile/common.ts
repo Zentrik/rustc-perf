@@ -1,6 +1,12 @@
 import {BenchmarkFilter, StatComparison} from "../types";
 import {TestCaseComparison} from "../data";
 
+declare global {
+  interface Window {
+    __NON_RELEVANT_CACHE__?: any;
+  }
+}
+
 export type CompileBenchmarkFilter = BenchmarkFilter;
 
 export const defaultCompileFilter: CompileBenchmarkFilter = {

@@ -2,7 +2,6 @@ import {BenchmarkFilter, StatComparison} from "./types";
 
 export interface Summary {
   count: number;
-  benchmarks: number;
   average: number;
   range: Array<number>;
 }
@@ -26,7 +25,12 @@ export function filterNonRelevant<Case>(
   if (filter.nonRelevant) {
     return cases;
   }
-  return cases.filter((c) => c.comparison.is_relevant);
+  if (!window.__NON_RELEVANT_CACHE__) {
+    window.__NON_RELEVANT_CACHE__ = cases.filter(
+      (c) => c.comparison.is_relevant
+    );
+  }
+  return window.__NON_RELEVANT_CACHE__;
 }
 
 /**
@@ -36,60 +40,58 @@ export function filterNonRelevant<Case>(
 export function computeSummary<Case extends {benchmark: string}>(
   comparisons: TestCaseComparison<Case>[]
 ): SummaryGroup {
-  const regressions = {
-    values: [],
-    benchmarks: new Set(),
-  };
-  const improvements: typeof regressions = {
-    values: [],
-    benchmarks: new Set(),
-  };
-  const all: typeof regressions = {
-    values: [],
-    benchmarks: new Set(),
+  let regressions: Summary = {
+    count: 0,
+    average: 0,
+    range: [100, 0],
   };
 
-  const handleTestCase = (
-    items: typeof regressions,
-    comparison: TestCaseComparison<Case>
-  ) => {
-    items.benchmarks.add(comparison.test_case.benchmark);
-    items.values.push(comparison.percent);
+  let improvements: Summary = {
+    count: 0,
+    average: 0,
+    range: [0, -100],
+  };
+
+  let all: Summary = {
+    count: comparisons.length,
+    average: 0,
+    range: [100, 0],
   };
 
   for (const testCase of comparisons) {
     if (testCase.percent > 0) {
-      handleTestCase(regressions, testCase);
+      improvements.count++;
+      improvements.range[0] = Math.min(improvements.range[0], testCase.percent);
+      improvements.range[1] = Math.max(improvements.range[1], testCase.percent);
+      improvements.average += testCase.percent;
     } else if (testCase.percent < 0) {
-      handleTestCase(improvements, testCase);
+      regressions.count++;
+      regressions.range[0] = Math.max(regressions.range[0], testCase.percent);
+      regressions.range[1] = Math.min(regressions.range[1], testCase.percent);
+      regressions.average += testCase.percent;
     }
-    handleTestCase(all, testCase);
+    all.range[0] = Math.min(all.range[0], testCase.percent);
+    all.range[1] = Math.max(all.range[1], testCase.percent);
+    all.average += testCase.percent;
   }
 
-  const computeSummary = (data): Summary => {
-    const values = data.values;
-    const benchmarks = data.benchmarks;
+  improvements.average = improvements.average / Math.max(1, improvements.count);
+  regressions.average = regressions.average / Math.max(regressions.count);
+  all.average = all.average / Math.max(1, all.count);
 
-    const count = values.length;
-    let range: Array<number> = [];
-    if (count > 0) {
-      range = [Math.min.apply(null, values), Math.max.apply(null, values)];
-    }
-
-    const sum = values.reduce((acc, item) => acc + item, 0);
-    const average = sum / Math.max(count, 1);
-
-    return {
-      count,
-      benchmarks: benchmarks.size,
-      average,
-      range,
-    };
-  };
+  if (improvements.count === 0) {
+    improvements.range[0] = 0;
+  }
+  if (regressions.count === 0) {
+    regressions.range[1] = 0;
+  }
+  if (all.count === 0) {
+    all.range[0] = 0;
+  }
 
   return {
-    improvements: computeSummary(improvements),
-    regressions: computeSummary(regressions),
-    all: computeSummary(all),
+    improvements: improvements,
+    regressions: regressions,
+    all: all,
   };
 }
