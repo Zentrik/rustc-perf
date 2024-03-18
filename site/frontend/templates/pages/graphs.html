@@ -55,13 +55,13 @@
   end = params.get("end") ?? "";
   kind = params.get("kind") ?? "raw";
   stat = params.get("stat") ?? "min-wall-time";
-  benchmark = params.get("benchmark") ?? null;
+  benchmark = params.get("benchmark") ?? "";
   const urlParams = new URLSearchParams();
   urlParams.set("start", start);
   urlParams.set("end", end);
   urlParams.set("kind", kind);
   urlParams.set("stat", stat);
-  urlParams.set("benchmark", benchmark);
+  if (benchmark) urlParams.set("benchmark", benchmark);
 
   var preload = document.createElement("link");
   preload.href = `/perf/graphs?${urlParams}`;

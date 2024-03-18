@@ -94,24 +94,28 @@ async function loadGraphData(selector: GraphsSelector, loading: Ref<boolean>) {
     // So, first render everything but the less important benchmarks about artifact sizes.
     // This keeps the grouping and alignment of 4 charts per row where all 4 charts are about a
     // given benchmark. So, we exclude the benchmarks ending in "-tiny".
-    const withoutTiny = filterBenchmarks(
-      graphData,
-      (benchName) => !benchName.endsWith("-tiny")
+    const inferenceOnly = filterBenchmarks(graphData, (benchName) =>
+      benchName.startsWith("inference.")
     );
-    renderPlots(withoutTiny, selector, document.getElementById("charts"), opts);
+    renderPlots(
+      inferenceOnly,
+      selector,
+      document.getElementById("charts"),
+      opts
+    );
 
     // Then, render only the size-related ones in their own dedicated section as they are less
     // important than having the better grouping. So, we only include the benchmarks ending in
     // "-tiny" and render them in the appropriate section.
-    const onlyTiny = filterBenchmarks(graphData, (benchName) =>
-      benchName.endsWith("-tiny")
-    );
-    renderPlots(
-      onlyTiny,
-      selector,
-      document.getElementById("size-charts"),
-      opts
-    );
+    // const onlyTiny = filterBenchmarks(graphData, (benchName) =>
+    //   benchName.endsWith("-tiny")
+    // );
+    // renderPlots(
+    //   onlyTiny,
+    //   selector,
+    //   document.getElementById("size-charts"),
+    //   opts
+    // );
   }
 }
 
@@ -163,12 +167,7 @@ loadGraphData(selector, loading);
       <div
         v-if="!hasSpecificSelection(selector)"
         style="margin-top: 50px; border-top: 1px solid #ccc"
-      >
-        <div style="padding: 20px 0">
-          <strong>Benchmarks optimized for small binary size</strong>
-        </div>
-        <div id="size-charts"></div>
-      </div>
+      ></div>
       <AsOf :info="info" />
     </div>
   </div>
