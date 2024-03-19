@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {ArtifactDescription, CompareResponse, CompareSelector} from "../types";
-import {formatDate} from "../shared";
-import {computed} from "vue";
+import { ArtifactDescription, CompareResponse, CompareSelector } from "../types";
+import { formatDate } from "../shared";
+import { computed } from "vue";
 
 const props = defineProps<{
   data: CompareResponse | null;
@@ -40,12 +40,22 @@ function formatBound(
 }
 
 const prevLink = computed(
-  () =>
-    `/compare.html?start=${props.data.prev}&end=${props.data.a.commit}&stat=${props.selector.stat}`
+  () => {
+    if (props.data.b.type == "try") {
+      return `/compare.html?end=${props.data.prev}&stat=${props.selector.stat}`
+    } else {
+      return `/compare.html?start=${props.data.prev}&end=${props.data.a.commit}&stat=${props.selector.stat}`
+    }
+  }
 );
 const nextLink = computed(
-  () =>
-    `/compare.html?start=${props.data.b.commit}&end=${props.data.next}&stat=${props.selector.stat}`
+  () => {
+    if (props.data.b.type == "try") {
+      return `/compare.html?end=${props.data.next}&stat=${props.selector.stat}`
+    } else {
+      return `/compare.html?start=${props.data.b.commit}&end=${props.data.next}&stat=${props.selector.stat}`
+    }
+  }
 );
 const compareLink = computed(
   () =>
@@ -73,33 +83,19 @@ const after = computed(() =>
           <a v-bind:href="prevLink">&larr;</a>
         </div>
         <div style="padding: 10px">
-          <span
-            ><a v-if="data.a.pr" v-bind:href="prLink(data.a.pr)"
-              >#{{ data.a.pr }}</a
-            >&nbsp;</span
-          >
+          <span><a v-if="data.a.pr" v-bind:href="prLink(data.a.pr)">#{{ data.a.pr }}</a>&nbsp;</span>
           <span v-if="data.a.date">{{ formatDate(data.a.date) }}</span>
-          (<a v-bind:href="commitLink(data.a.commit)">{{ short(data.a) }}</a
-          >)
+          (<a v-bind:href="commitLink(data.a.commit)">{{ short(data.a) }}</a>)
         </div>
       </div>
-      <div
-        v-if="!data.is_contiguous"
-        class="not-continuous"
-        title="WARNING! The commits are not continuous."
-      >
+      <div v-if="!data.is_contiguous" class="not-continuous" title="WARNING! The commits are not continuous.">
         ...
       </div>
       <div class="description-box">
         <div style="padding: 10px">
-          <span
-            ><a v-if="data.b.pr" v-bind:href="prLink(data.b.pr)"
-              >#{{ data.b.pr }}</a
-            >&nbsp;</span
-          >
+          <span><a v-if="data.b.pr" v-bind:href="prLink(data.b.pr)">#{{ data.b.pr }}</a>&nbsp;</span>
           <span v-if="data.b.date">{{ formatDate(data.b.date) }}</span>
-          (<a v-bind:href="commitLink(data.b.commit)">{{ short(data.b) }}</a
-          >)
+          (<a v-bind:href="commitLink(data.b.commit)">{{ short(data.b) }}</a>)
         </div>
         <div v-if="data.next" class="description-arrow">
           <a v-bind:href="nextLink">&rarr;</a>
@@ -117,6 +113,7 @@ const after = computed(() =>
   border: 1px solid;
   display: flex;
 }
+
 .description-arrow {
   display: flex;
   flex-direction: column;
@@ -124,6 +121,7 @@ const after = computed(() =>
   background: #8dcc8d;
   padding: 5px;
 }
+
 .not-continuous {
   display: flex;
   flex-direction: column;
