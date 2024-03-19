@@ -1217,6 +1217,30 @@ impl Connection for SqliteConnection {
             .flatten()
     }
 
+    async fn pr_prev_sha_of(&self, pr: u32, commit: &str) -> Option<String> {
+        self.raw_ref()
+            .query_row(
+                "select bors_sha from pull_request_build where pr = ? and commit_date < (select commit_date from pull_request_build where bors_sha=?) ORDER BY commit_date DESC LIMIT 1",
+                params![pr, commit],
+                |row| Ok(row.get::<_, Option<String>>(0).unwrap()),
+            )
+            .optional()
+            .unwrap()
+            .flatten()
+    }
+
+    async fn pr_next_sha_of(&self, pr: u32, commit: &str) -> Option<String> {
+        self.raw_ref()
+            .query_row(
+                "select bors_sha from pull_request_build where pr = ? and commit_date > (select commit_date from pull_request_build where bors_sha=?) ORDER BY commit_date DESC LIMIT 1",
+                params![pr, commit],
+                |row| Ok(row.get::<_, Option<String>>(0).unwrap()),
+            )
+            .optional()
+            .unwrap()
+            .flatten()
+    }
+
     async fn tag_predicates(&self) -> HashMap<String, String> {
         self.raw_ref()
             .prepare("select bors_sha, include from pull_request_build")

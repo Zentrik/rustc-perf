@@ -1220,6 +1220,14 @@ where
         unimplemented!("Fetching latest commit of a pr is not implemented for postgres")
     }
 
+    async fn pr_prev_sha_of(&self, _pr: u32, _: &str) -> Option<String> {
+        unimplemented!("Fetching previous commit of a pr is not implemented for postgres")
+    }
+
+    async fn pr_next_sha_of(&self, _pr: u32, _: &str) -> Option<String> {
+        unimplemented!("Fetching next commit of a pr is not implemented for postgres")
+    }
+
     async fn tag_predicates(&self) -> HashMap<String, String> {
         self.conn()
             .query("select bors_sha, include from pull_request_build", &[])

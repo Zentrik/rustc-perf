@@ -140,8 +140,18 @@ pub async fn handle_compare(
             .ok_or_else(|| format!("could not find end commit for bound {:?}", end))?;
 
     let conn = ctxt.conn().await;
-    let prev = comparison.prev(master_commits);
-    let next = comparison.next(master_commits);
+    let mut prev = comparison.prev(master_commits);
+    if let ArtifactId::Commit(c) = &comparison.b.artifact {
+        if c.is_try() {
+            prev = conn.pr_prev_sha_of(comparison.b.pr.unwrap(), &c.sha).await
+        }
+    }
+    let mut next = comparison.next(master_commits);
+    if let ArtifactId::Commit(c) = &comparison.a.artifact {
+        if c.is_try() {
+            next = conn.pr_next_sha_of(comparison.b.pr.unwrap(), &c.sha).await
+        }
+    }
     let is_contiguous = comparison.is_contiguous(&*conn, master_commits).await;
 
     let compile_comparisons = comparison
@@ -733,8 +743,17 @@ async fn compare_given_commits(
                         .artifact_id_for_bound(Bound::Commit(parent_sha), true)
                         .await
                         .unwrap_or(a);
+                }
             } else {
-                a = prev_commit(&b, master_commits);
+                if let Some(prev_end) = prev_commit(&b, master_commits) {
+                    a = ctxt
+                        .artifact_id_for_bound(Bound::Commit(prev_end.sha.clone()), true)
+                        .await
+                        .ok_or(format!(
+                            "could not find start commit for last benchmark prior to {:?}",
+                            end
+                        ))?;
+                }
             }
         }
     }
