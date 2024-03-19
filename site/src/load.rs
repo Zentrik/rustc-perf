@@ -148,7 +148,7 @@ impl SiteCtxt {
 
     pub async fn artifact_id_for_bound(&self, query: Bound, is_left: bool) -> Option<ArtifactId> {
         crate::selector::artifact_id_for_bound(
-            &self,
+            self,
             &self.get_master_commits().commits,
             &self.index.load(),
             query,
