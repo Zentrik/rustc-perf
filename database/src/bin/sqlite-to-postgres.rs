@@ -494,13 +494,13 @@ impl Table for RustcCompilation {
 
 struct RuntimePstat;
 
-// #[derive(Serialize)]
-// struct RuntimePstatRow {
-//     series: i32,
-//     aid: i32,
-//     cid: i32,
-//     value: f64,
-// }
+#[derive(Serialize)]
+struct RuntimePstatRow {
+    series: i32,
+    aid: i32,
+    cid: i32,
+    value: f64,
+}
 
 impl Table for RuntimePstat {
     fn name() -> &'static str {
