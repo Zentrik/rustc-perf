@@ -45,8 +45,8 @@ function submitSettings() {
 
 <template>
   <div id="settings">
-    start: <input placeholder="yyyy-mm-dd or commit or pr #" ref="startRef" /> end:
-    <input placeholder="yyyy-mm-dd or commit or pr #" ref="endRef" /> Graph kind:
+    start: <input placeholder="yyyy-mm-dd or commit" ref="startRef" /> end:
+    <input placeholder="yyyy-mm-dd or commit" ref="endRef" /> Graph kind:
     <select ref="kindRef">
       <option value="raw">Raw</option>
       <option value="percentfromfirst">Percent Delta from First</option>
