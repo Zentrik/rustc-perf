@@ -734,7 +734,7 @@ async fn compare_given_commits(
     };
 
     if let ArtifactId::Commit(c) = b.clone() {
-        if matches!(start, Bound::None) {
+        if matches!(start, Bound::None) && matches!(end, Bound::Commit(_)) {
             if c.is_try() {
                 let conn = ctxt.conn().await;
                 let parent_sha_opt = conn.parent_of(&c.sha).await;
