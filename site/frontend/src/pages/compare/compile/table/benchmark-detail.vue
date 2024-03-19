@@ -30,8 +30,16 @@ function graphLink(
   testCase: CompileTestCase
 ): string {
   // Move to `$2*DAY_RANGE days ago` to display history of the test case
-  const start = formatDate(getPastDate(new Date(commit.date), 2*DAY_RANGE));
-  const end = commit.commit;
+  const start = formatDate(getPastDate(new Date(commit.date), 2 * DAY_RANGE));
+  const requested_end = new URL(window.location.toString()).searchParams.get(
+    "end"
+  );
+  let end;
+  if (!requested_end) {
+    end = "";
+  } else {
+    end = commit.commit;
+  }
   const {benchmark} = testCase;
   return `/graphs.html?start=${start}&end=${end}&benchmark=${benchmark}&stat=${metric}`;
 }
