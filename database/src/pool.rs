@@ -159,6 +159,10 @@ pub trait Connection: Send + Sync {
     ///
     async fn pr_of(&self, sha: &str) -> Option<u32>;
 
+    /// Returns the sha of the lastest commit in a pr, if available.
+    ///
+    async fn pr_sha_of(&self, pr: &str) -> Option<String>;
+
     /// Returns the tag predicate of the benchmark run, if available.
     /// I.e. which benchmarks were run
     async fn tag_predicates(&self) -> HashMap<String, String>;

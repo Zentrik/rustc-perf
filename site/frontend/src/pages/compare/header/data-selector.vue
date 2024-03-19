@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {BenchmarkInfo} from "../../../api";
-import {onMounted, ref} from "vue";
+import { BenchmarkInfo } from "../../../api";
+import { onMounted, ref } from "vue";
 import Toggle from "../toggle.vue";
 
 export interface SelectionParams {
@@ -34,7 +34,7 @@ function submitSettings() {
   const end = endRef.value.value;
   const stat = statRef.value.value;
 
-  const params = {start, end, stat};
+  const params = { start, end, stat };
   emit("change", params);
 }
 
@@ -48,41 +48,26 @@ const opened = ref(false);
       <template #content>
         <div class="commits section">
           <div class="section-heading">Commits</div>
-          <div
-            style="display: flex; width: 100%; justify-content: space-around"
-          >
+          <div style="display: flex; width: 100%; justify-content: space-around">
             <div class="commit-input">
               <label for="start-bound">Before</label>
-              <input
-                width="100em"
-                placeholder="YYYY-MM-DD or Commit SHA"
-                ref="startRef"
-              />
+              <input width="100em" placeholder="YYYY-MM-DD or Commit SHA or PR #" ref="startRef" />
             </div>
             <div class="commit-input">
               <label for="end-bound">After</label>
-              <input
-                width="100em"
-                placeholder="YYYY-MM-DD or Commit SHA"
-                ref="endRef"
-              />
+              <input width="100em" placeholder="YYYY-MM-DD or Commit SHA or PR #" ref="endRef" />
             </div>
           </div>
         </div>
         <div class="metric section">
           <div class="section-heading">Metric</div>
-          <div
-            style="
+          <div style="
               display: flex;
               flex-direction: column;
               justify-content: center;
-            "
-          >
+            ">
             <select class="stats" ref="statRef">
-              <option
-                v-for="value in props.info.compile_metrics"
-                :value="value"
-              >
+              <option v-for="value in props.info.compile_metrics" :value="value">
                 {{ value }}
               </option>
             </select>
@@ -100,25 +85,30 @@ const opened = ref(false);
   font-weight: bold;
   background: #add8e6;
 }
+
 .commits {
   border: none;
   display: flex;
   padding: 0;
 }
+
 .commit-input {
   width: 270px;
   display: flex;
   flex-direction: column;
 }
+
 .commit-input label {
   font-size: 12px;
   font-weight: bold;
   margin-bottom: 6px;
 }
+
 .metric {
   position: relative;
   height: 40px;
 }
+
 .stats {
   border-radius: 5px;
   width: 200px;
