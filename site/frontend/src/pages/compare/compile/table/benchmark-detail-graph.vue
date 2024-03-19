@@ -111,6 +111,7 @@ async function renderGraph(
   const opts: GraphRenderOpts = {
     width: Math.min(window.innerWidth / 2 - 40, 380),
     height: 300,
+    renderTitle: false
   };
   if (date !== null) {
     drawCurrentDate(opts, date);
