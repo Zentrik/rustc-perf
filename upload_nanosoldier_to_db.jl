@@ -9,7 +9,7 @@ const headers = nothing
 function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
     println("Processing $path...")
     mktempdir() do dir
-    # dir = mktempdir() # Debugger is unable to step into the above line
+        # dir = mktempdir() # Debugger is unable to step into the above line
         # extract
         open(path) do io
             stream = if endswith(path, ".xz")
@@ -66,7 +66,7 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     # For a pr, we want parent_sha to be the commit it's compared to
                     artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
                     if artifact_row.type == "try"
-                        commit_sha = filter(file-> endswith(file, ".json") && contains(file, r".(minimum|median|mean).json"), readdir(data)) .|> get_sha |> unique
+                        commit_sha = filter(file -> endswith(file, ".json") && contains(file, r".(minimum|median|mean).json"), readdir(data)) .|> get_sha |> unique
                         parent_sha = commit_sha[1] == sha ? commit_sha[2] : commit_sha[1]
                     end
 
@@ -93,7 +93,7 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                         end
 
                         if !isnothing(regex_match)
-                            triggered_by_pr = regex_match.captures[1] |> x->parse(Int, x)
+                            triggered_by_pr = regex_match.captures[1] |> x -> parse(Int, x)
                             println("Commit $sha has no PR using triggered by pr $triggered_by_pr instead")
                             DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr, parent_sha, commit_date, include) VALUES ('$sha', $triggered_by_pr, '$parent_sha', $(artifact_row.date), '$tag_predicate')")
                         else
@@ -154,7 +154,7 @@ function push_metric_to_pstat!(df::DataFrame, db::SQLite.DB, benchmark_name::Str
 end
 
 function create_pstat_rows(series_id, aid, val)
-    len =  length(val)
+    len = length(val)
     DataFrame(series=series_id, aid=fill(aid, len), value=val)
 end
 
@@ -193,7 +193,7 @@ function create_artifact_row(path, file, id)
 end
 
 function rec_flatten_benchmarkgroup(d)
-    new_d = Dict{String, BenchmarkTools.TrialEstimate}()
+    new_d = Dict{String,BenchmarkTools.TrialEstimate}()
     for (key, value) in pairs(d.data)
         if key isa Tuple
             key = "(" * join(key, ", ") * ")"
@@ -387,7 +387,7 @@ function fixup_parent_sha_and_pr_try_commits()
     root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_hash"
     dirs = readdir(root_dir)
     for sha in artifacts[!, "name"]
-        matching_dirs = findall(dir->dir[1:7] == sha[1:7] || dir[end-6:end] == sha[1:7], dirs)
+        matching_dirs = findall(dir -> dir[1:7] == sha[1:7] || dir[end-6:end] == sha[1:7], dirs)
         if isempty(matching_dirs)
             println("No matching dir for $sha")
         elseif length(matching_dirs) > 1
@@ -407,7 +407,7 @@ function fixup_parent_sha_and_pr_try_commits()
             regex_match = match(r"\*Triggered By:\* \[link\]\(https://github.com/JuliaLang/julia/pull/(\d+)", report_file)
 
             if !isnothing(regex_match)
-                triggered_by_pr = regex_match.captures[1] |> x->parse(Int, x)
+                triggered_by_pr = regex_match.captures[1] |> x -> parse(Int, x)
                 DBInterface.execute(db, "UPDATE pull_request_build SET parent_sha='$parent_sha', pr=$triggered_by_pr WHERE bors_sha='$sha'") |> DataFrame
             else
                 printstyled("Commit $sha is a try build but was not triggered in a PR\n", color=:red)
@@ -422,12 +422,12 @@ function fixup_tag_of_byhash()
     db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT name FROM artifact WHERE type='master'") |> DataFrame
 
-    sha_to_tags = Dict{String, Vector{String}}()
+    sha_to_tags = Dict{String,Vector{String}}()
 
     root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_hash"
     dirs = readdir(root_dir)
     for sha in artifacts[!, "name"]
-        matching_dirs = findall(dir->dir[1:7] == sha[1:7] || dir[end-6:end] == sha[1:7], dirs)
+        matching_dirs = findall(dir -> dir[1:7] == sha[1:7] || dir[end-6:end] == sha[1:7], dirs)
         if isempty(matching_dirs)
             # println("No matching dir for $sha")
         elseif length(matching_dirs) > 1
@@ -474,7 +474,7 @@ end
 function fixup_tag_of_daily()
     db = SQLite.DB("julia.db")
 
-    sha_to_tags = Dict{String, Vector{String}}()
+    sha_to_tags = Dict{String,Vector{String}}()
 
     root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_date"
     dirs = readdir(root_dir)
@@ -506,11 +506,11 @@ function add_pr_nums()
             pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers=headers).body |> JSON3.read
             if !isempty(pr_details) && haskey(pr_details[1], :number)
                 pr_num = pr_details[1].number
-                push!(pr_df, (bors_sha = sha, pr = pr_num, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
+                push!(pr_df, (bors_sha=sha, pr=pr_num, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
                 # DBInterface.execute(db, "INSERT INTO pull_request_build (bors_sha, pr) VALUES ('$sha', $pr_num)")
             else
                 println("Commit $sha has no PR")
-                push!(pr_df, (bors_sha = sha, pr = missing, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
+                push!(pr_df, (bors_sha=sha, pr=missing, parent_sha="", exclude=missing, complete=missing, runs=missing, include="ALL", commit_date=missing, requested=missing))
             end
         else
             # Doesn't really work due to force pushes I think, e.g. https://github.com/JuliaLang/julia/commit/4ff1f007974a4ea1d89e636d8feed83723bbb779 has no pr
@@ -568,7 +568,7 @@ function create_sample_pstat_df()
     @time begin
         df = DataFrame()
 
-        processed_commits = Dict{String, Int}()
+        processed_commits = Dict{String,Int}()
 
         for file in readdir(dir)
             if !endswith(file, ".json") || !contains(file, r".(minimum|median|mean).json")
