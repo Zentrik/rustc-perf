@@ -41,9 +41,11 @@ pub async fn handle_triage(
 
     let start_artifact = ctxt
         .artifact_id_for_bound(start.clone(), true)
+        .await
         .ok_or(format!("could not find start commit for bound {:?}", start))?;
     let end_artifact = ctxt
         .artifact_id_for_bound(end.clone(), false)
+        .await
         .ok_or(format!("could not find end commit for bound {:?}", end))?;
     // This gives a better error, but is still not great -- the common case here
     // is that we've had a 422 error and as such had a fork. It's possible we
@@ -714,8 +716,9 @@ async fn compare_given_commits(
     let idx = ctxt.index.load();
     let mut a = ctxt
         .artifact_id_for_bound(start.clone(), true)
+        .await
         .ok_or(format!("could not find start commit for bound {:?}", start))?;
-    let b = match ctxt.artifact_id_for_bound(end.clone(), false) {
+    let b = match ctxt.artifact_id_for_bound(end.clone(), false).await {
         Some(b) => b,
         None => return Ok(None),
     };
@@ -727,6 +730,7 @@ async fn compare_given_commits(
             if let Some(parent_sha) = parent_sha_opt {
                 a = ctxt
                     .artifact_id_for_bound(Bound::Commit(parent_sha), true)
+                    .await
                     .unwrap_or(a);
             }
         }

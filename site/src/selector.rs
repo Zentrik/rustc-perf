@@ -14,14 +14,15 @@ use std::time::Instant;
 ///
 /// Searches the commits in the index either from the left or the right.
 /// If not found in those commits, searches through the artifacts in the index.
-pub fn artifact_id_for_bound(
+pub async fn artifact_id_for_bound(
+    ctxt: &SiteCtxt,
     master_commits: &[MasterCommit],
     data: &Index,
     bound: Bound,
     is_left: bool,
 ) -> Option<ArtifactId> {
     let commits = data.commits();
-    let commit = if is_left {
+    let mut commit = if is_left {
         commits
             .iter()
             .find(|commit| bound.left_match(master_commits, commit))
@@ -32,6 +33,22 @@ pub fn artifact_id_for_bound(
             .rfind(|commit| bound.right_match(master_commits, commit))
             .cloned()
     };
+    if commit.is_none() {
+        if let Bound::Commit(c) = &bound {
+            let pr_commit = ctxt
+                .conn()
+                .await
+                .pr_sha_of(c.as_str())
+                .await
+                .map(Bound::Commit);
+            if let Some(pr_bound) = pr_commit {
+                commit = commits
+                    .iter()
+                    .rfind(|commit| pr_bound.right_match(master_commits, commit))
+                    .cloned()
+            }
+        }
+    }
     commit.map(ArtifactId::Commit).or_else(|| {
         data.artifacts()
             .find(|aid| match &bound {

@@ -145,13 +145,15 @@ impl SiteCtxt {
         ]
     }
 
-    pub fn artifact_id_for_bound(&self, query: Bound, is_left: bool) -> Option<ArtifactId> {
+    pub async fn artifact_id_for_bound(&self, query: Bound, is_left: bool) -> Option<ArtifactId> {
         crate::selector::artifact_id_for_bound(
+            &self,
             &self.get_master_commits().commits,
             &self.index.load(),
             query,
             is_left,
         )
+        .await
     }
 
     pub fn data_range(&self, range: RangeInclusive<Bound>) -> Vec<Commit> {

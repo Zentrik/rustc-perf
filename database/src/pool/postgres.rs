@@ -671,7 +671,7 @@ where
     }
 
     async fn get_pstats_metric(&self, _metric: &str, _aid: u32) -> HashMap<u32, f64> {
-        unimplemented!("Fetching pstats_metric is not implemented for sqlite")
+        unimplemented!("Fetching pstats_metric is not implemented for postgres")
     }
 
     async fn get_pstats(
@@ -1214,6 +1214,10 @@ where
             .await
             .unwrap()
             .map(|r| r.get::<_, i32>(0) as u32)
+    }
+
+    async fn pr_sha_of(&self, _pr: &str) -> Option<String> {
+        unimplemented!("Fetching latest commit of a pr is not implemented for postgres")
     }
 
     async fn tag_predicates(&self) -> HashMap<String, String> {

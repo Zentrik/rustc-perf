@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {onMounted, ref} from "vue";
-import {GraphKind} from "../../graph/data";
-import {BenchmarkInfo} from "../../api";
+import { onMounted, ref } from "vue";
+import { GraphKind } from "../../graph/data";
+import { BenchmarkInfo } from "../../api";
 
 export interface SelectionParams {
   start: string;
@@ -38,15 +38,15 @@ function submitSettings() {
   const kind = kindRef.value.value as GraphKind;
   const stat = statRef.value.value;
 
-  const params = {start, end, kind, stat};
+  const params = { start, end, kind, stat };
   emit("change", params);
 }
 </script>
 
 <template>
   <div id="settings">
-    start: <input placeholder="yyyy-mm-dd or commit" ref="startRef" /> end:
-    <input placeholder="yyyy-mm-dd or commit" ref="endRef" /> Graph kind:
+    start: <input placeholder="yyyy-mm-dd or commit or pr #" ref="startRef" /> end:
+    <input placeholder="yyyy-mm-dd or commit or pr #" ref="endRef" /> Graph kind:
     <select ref="kindRef">
       <option value="raw">Raw</option>
       <option value="percentfromfirst">Percent Delta from First</option>
@@ -55,7 +55,7 @@ function submitSettings() {
     <select ref="statRef">
       <option v-for="value in info.compile_metrics" :value="value">
         {{ value }}
-      </option></select
-    >&nbsp;<a href="#" @click.prevent="submitSettings">Submit</a>
+      </option>
+    </select>&nbsp;<a href="#" @click.prevent="submitSettings">Submit</a>
   </div>
 </template>

@@ -70,12 +70,14 @@ pub async fn handle_compile_detail_sections(
 
     let start_artifact = ctxt
         .artifact_id_for_bound(request.start.clone(), true)
+        .await
         .ok_or(format!(
             "could not find start commit for bound {:?}",
             request.start
         ))?;
     let end_artifact = ctxt
         .artifact_id_for_bound(request.end.clone(), false)
+        .await
         .ok_or(format!(
             "could not find end commit for bound {:?}",
             request.end
