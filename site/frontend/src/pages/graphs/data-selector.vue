@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { GraphKind } from "../../graph/data";
-import { BenchmarkInfo } from "../../api";
+import {onMounted, ref} from "vue";
+import {GraphKind} from "../../graph/data";
+import {BenchmarkInfo} from "../../api";
 
 export interface SelectionParams {
   start: string;
@@ -38,7 +38,7 @@ function submitSettings() {
   const kind = kindRef.value.value as GraphKind;
   const stat = statRef.value.value;
 
-  const params = { start, end, kind, stat };
+  const params = {start, end, kind, stat};
   emit("change", params);
 }
 </script>
@@ -55,7 +55,7 @@ function submitSettings() {
     <select ref="statRef">
       <option v-for="value in info.compile_metrics" :value="value">
         {{ value }}
-      </option>
-    </select>&nbsp;<a href="#" @click.prevent="submitSettings">Submit</a>
+      </option></select
+    >&nbsp;<a href="#" @click.prevent="submitSettings">Submit</a>
   </div>
 </template>
