@@ -147,7 +147,7 @@ pub async fn handle_compare(
         }
     }
     let mut next = comparison.next(master_commits);
-    if let ArtifactId::Commit(c) = &comparison.a.artifact {
+    if let ArtifactId::Commit(c) = &comparison.b.artifact {
         if c.is_try() {
             next = conn.pr_next_sha_of(comparison.b.pr.unwrap(), &c.sha).await
         }
