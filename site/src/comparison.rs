@@ -724,14 +724,17 @@ async fn compare_given_commits(
     };
 
     if let ArtifactId::Commit(c) = b.clone() {
-        if matches!(start, Bound::None) && c.is_try() {
-            let conn = ctxt.conn().await;
-            let parent_sha_opt = conn.parent_of(&c.sha).await;
-            if let Some(parent_sha) = parent_sha_opt {
-                a = ctxt
-                    .artifact_id_for_bound(Bound::Commit(parent_sha), true)
-                    .await
-                    .unwrap_or(a);
+        if matches!(start, Bound::None) {
+            if c.is_try() {
+                let conn = ctxt.conn().await;
+                let parent_sha_opt = conn.parent_of(&c.sha).await;
+                if let Some(parent_sha) = parent_sha_opt {
+                    a = ctxt
+                        .artifact_id_for_bound(Bound::Commit(parent_sha), true)
+                        .await
+                        .unwrap_or(a);
+            } else {
+                a = prev_commit(&b, master_commits);
             }
         }
     }
