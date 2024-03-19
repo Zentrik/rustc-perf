@@ -60,19 +60,22 @@ pub async fn artifact_id_for_bound(
     })
 }
 
-pub fn range_subset(
-    master_commits: &[MasterCommit],
-    data: Vec<Commit>,
-    range: RangeInclusive<Bound>,
-) -> Vec<Commit> {
+// This is used in graphing were we want all commits on master not master_commits (which are commits on master and whole benchmark suite)
+pub fn range_subset(data: Vec<Commit>, range: RangeInclusive<Bound>) -> Vec<Commit> {
     let (a, b) = range.into_inner();
+
+    let commits_on_master: Vec<Commit> = data
+        .iter()
+        .filter(|c| c.is_master())
+        .cloned()
+        .collect();
 
     let left_idx = data
         .iter()
-        .position(|commit| a.left_match(master_commits, commit));
+        .position(|commit| a.left_match(&commits_on_master, commit));
     let right_idx = data
         .iter()
-        .rposition(|commit| b.right_match(master_commits, commit));
+        .rposition(|commit| b.right_match(&commits_on_master, commit));
 
     if let (Some(left), Some(right)) = (left_idx, right_idx) {
         data.get(left..=right)

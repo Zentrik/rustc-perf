@@ -41,32 +41,46 @@ pub enum Bound {
     None,
 }
 
+pub trait HasSha {
+    fn sha(&self) -> &String;
+}
+impl HasSha for MasterCommit {
+    fn sha(&self) -> &String {
+        &self.sha
+    }
+}
+impl HasSha for Commit {
+    fn sha(&self) -> &String {
+        &self.sha
+    }
+}
+
 impl Bound {
     /// Tests whether `self` matches commit when searching from the left
-    pub fn left_match(&self, master_commits: &[MasterCommit], commit: &Commit) -> bool {
+    pub fn left_match<T: HasSha>(&self, master_commits: &[T], commit: &Commit) -> bool {
         match self {
             Bound::Commit(sha) => commit.sha == **sha,
             Bound::Date(date) => {
-                master_commits.iter().any(|m| m.sha == commit.sha)
+                master_commits.iter().any(|m| *m.sha() == commit.sha)
                     && commit.date.0.naive_utc().date() >= *date
             }
             Bound::None => {
                 let last_month = chrono::Utc::now().date_naive() - chrono::Duration::days(30);
-                master_commits.iter().any(|m| m.sha == commit.sha)
+                master_commits.iter().any(|m| *m.sha() == commit.sha)
                     && last_month <= commit.date.0.naive_utc().date()
             }
         }
     }
 
     /// Tests whether `self` matches commit when searching from the right
-    pub fn right_match(&self, master_commits: &[MasterCommit], commit: &Commit) -> bool {
+    pub fn right_match<T: HasSha>(&self, master_commits: &[T], commit: &Commit) -> bool {
         match self {
             Bound::Commit(sha) => commit.sha == **sha,
             Bound::Date(date) => {
-                master_commits.iter().any(|m| m.sha == commit.sha)
+                master_commits.iter().any(|m| *m.sha() == commit.sha)
                     && commit.date.0.date_naive() <= *date
             }
-            Bound::None => master_commits.iter().any(|m| m.sha == commit.sha),
+            Bound::None => master_commits.iter().any(|m| *m.sha() == commit.sha),
         }
     }
 }
