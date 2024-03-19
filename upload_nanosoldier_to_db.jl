@@ -354,6 +354,35 @@ function fix_dates()
     artifacts_table |> SQLite.load!(db, "artifact")
 end
 
+function fix_dates_pull_request_build()
+    db = SQLite.DB("julia.db")
+    pull_request_build_table = DBInterface.execute(db, "SELECT * FROM pull_request_build") |> DataFrame
+
+    # mktempdir() do dir
+    #     repo = LibGit2.clone("https://github.com/JuliaLang/julia.git", dir)
+    for (i, row) in pairs(eachrow(pull_request_build_table))
+        if row["commit_date"] !== missing
+            continue
+        end
+        try
+            commit_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/git/commits/$(row.bors_sha)", headers=headers).body |> JSON3.read # can remove /git/ not sure why it's there
+            date = DateTime(commit_details.author.date, dateformat"yyyy-mm-ddTHH:MM:SS\Z") |> datetime2unix |> Int64
+            # if (row["commit_date"] !== missing && row["commit_date"] != date)
+            #     println("Commit date already set for $i, $(row.bors_sha) to $(row["commit_date"]), whilst we were going to set it to $date")
+            # else
+            pull_request_build_table[i, "commit_date"] = date
+            # end
+        catch
+            println("failed for $i, $row")
+        end
+    end
+    # end
+
+    return pull_request_build_table
+    # DBInterface.execute(db, "DELETE FROM pull_request_build")
+    # pull_request_build_table |> SQLite.load!(db, "pull_request_build")
+end
+
 function add_old_by_hash_benchmarks()
     nanosoldier_dir = joinpath(@__DIR__, "..", "NanosoldierReports")
     # repo = LibGit2.GitRepo(nanosoldier_dir)
