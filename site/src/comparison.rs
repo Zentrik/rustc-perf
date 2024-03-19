@@ -744,16 +744,14 @@ async fn compare_given_commits(
                         .await
                         .unwrap_or(a);
                 }
-            } else {
-                if let Some(prev_end) = prev_commit(&b, master_commits) {
-                    a = ctxt
-                        .artifact_id_for_bound(Bound::Commit(prev_end.sha.clone()), true)
-                        .await
-                        .ok_or(format!(
-                            "could not find start commit for last benchmark prior to {:?}",
-                            end
-                        ))?;
-                }
+            } else if let Some(prev_end) = prev_commit(&b, master_commits) {
+                a = ctxt
+                    .artifact_id_for_bound(Bound::Commit(prev_end.sha.clone()), true)
+                    .await
+                    .ok_or(format!(
+                        "could not find start commit for last benchmark prior to {:?}",
+                        end
+                    ))?;
             }
         }
     }
