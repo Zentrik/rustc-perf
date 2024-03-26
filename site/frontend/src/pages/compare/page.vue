@@ -71,7 +71,7 @@ const selector = loadSelectorFromUrl(urlParams);
 
 const data: Ref<CompareResponse | null> = ref(null);
 await loadCompareData(selector, loading);
-let info = await loadBenchmarkInfo();
+const info = await loadBenchmarkInfo();
 </script>
 
 <template>
