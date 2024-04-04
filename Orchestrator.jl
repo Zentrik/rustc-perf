@@ -28,7 +28,7 @@ function main()
     atexit(kill_server)
 
     while true
-        now = Dates.now()
+        now = now(UTC)
         sleep(1) # little buffer to make sure now <= mtime(dir) is true
 
         try
