@@ -28,8 +28,8 @@ function main()
     atexit(kill_server)
 
     while true
-        now = now(UTC)
-        sleep(1) # little buffer to make sure now <= mtime(dir) is true
+        fetch_time = now(UTC)
+        sleep(1) # little buffer to make sure fetch_time <= mtime(dir) is true
 
         fetched = false
         try
@@ -44,7 +44,7 @@ function main()
             changed = false
             for rel_dir in ("by_date", "by_hash")
                 for benchmark_dir in readdir(joinpath(nanosoldier_dir, "benchmark", rel_dir), join=true)
-                    if isdir(benchmark_dir) && now <= unix2datetime(mtime(benchmark_dir))
+                    if isdir(benchmark_dir) && fetch_time <= unix2datetime(mtime(benchmark_dir))
                         changed = true
                         kill_server()
                         println("$(benchmark_dir) changed")
