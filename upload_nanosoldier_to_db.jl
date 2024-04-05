@@ -230,8 +230,8 @@ function create_pstat_series(benchmark_table)
 end
 
 # TODO: Seperate out setup and processing
-function process_benchmarks(dir, db)
-    db = SQLite.DB(db)
+function process_benchmarks(dir)
+    db = SQLite.DB("julia.db")
 
     artifact_id_query = DBInterface.execute(db, "SELECT id FROM artifact ORDER BY id DESC LIMIT 1") |> DataFrame
     next_artifact_id = Ref{Int}((isempty(artifact_id_query) ? 0 : artifact_id_query[1, "id"]) + 1)
@@ -288,7 +288,7 @@ function auto_load(month=lpad(month(now()), 2, '0'), year=year(now()))
     # end
 end
 
-function create_tables(db)
+function create_tables()
     dir = "/home/rag/Documents/Code/NanosoldierReports/benchmark/by_date"
     @show dir
     # dates = readdir(dir)
@@ -326,7 +326,7 @@ function create_tables(db)
 
     return benchmark_table, pstat_series_table
 
-    db = SQLite.DB(db)
+    db = SQLite.DB("julia.db")
 
     DBInterface.execute(db, "DELETE FROM benchmark")
     DBInterface.execute(db, "DELETE FROM pstat_series")
@@ -337,8 +337,8 @@ function create_tables(db)
 end
 
 using LibGit2
-function fix_dates(db)
-    db = SQLite.DB(db)
+function fix_dates()
+    db = SQLite.DB("julia.db")
     artifacts_table = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
 
     mktempdir() do dir
@@ -354,8 +354,8 @@ function fix_dates(db)
     artifacts_table |> SQLite.load!(db, "artifact")
 end
 
-function fix_dates_pull_request_build(db)
-    db = SQLite.DB(db)
+function fix_dates_pull_request_build()
+    db = SQLite.DB("julia.db")
     pull_request_build_table = DBInterface.execute(db, "SELECT * FROM pull_request_build") |> DataFrame
 
     # mktempdir() do dir
@@ -396,8 +396,8 @@ function add_old_by_hash_benchmarks()
     end
 end
 
-function add_commits_with_no_pr(db)
-    db = SQLite.DB(db)
+function add_commits_with_no_pr()
+    db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
     pr_df = DataFrame()
     commits_to_process = DBInterface.execute(db, "SELECT name FROM artifact WHERE name NOT IN (SELECT bors_sha FROM pull_request_build)") |> DataFrame
@@ -409,8 +409,8 @@ function add_commits_with_no_pr(db)
     return pr_df
 end
 
-function fixup_parent_sha_and_pr_try_commits(db)
-    db = SQLite.DB(db)
+function fixup_parent_sha_and_pr_try_commits()
+    db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT name FROM artifact WHERE type='try'") |> DataFrame
 
     root_dir = "$(@__DIR__)/../NanosoldierReports/benchmark/by_hash"
@@ -447,8 +447,8 @@ function fixup_parent_sha_and_pr_try_commits(db)
 end
 
 # CAREFUL some of these commits might actually be daily
-function fixup_tag_of_byhash(db)
-    db = SQLite.DB(db)
+function fixup_tag_of_byhash()
+    db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT name FROM artifact WHERE type='master'") |> DataFrame
 
     sha_to_tags = Dict{String,Vector{String}}()
@@ -500,8 +500,8 @@ function fixup_tag_of_byhash(db)
     sha_to_tags
 end
 
-function fixup_tag_of_daily(db)
-    db = SQLite.DB(db)
+function fixup_tag_of_daily()
+    db = SQLite.DB("julia.db")
 
     sha_to_tags = Dict{String,Vector{String}}()
 
@@ -524,8 +524,8 @@ function fixup_tag_of_daily(db)
     sha_to_tags
 end
 
-function add_pr_nums(db)
-    db = SQLite.DB(db)
+function add_pr_nums()
+    db = SQLite.DB("julia.db")
     artifacts = DBInterface.execute(db, "SELECT * FROM artifact") |> DataFrame
     pr_df = DataFrame()
 
@@ -574,9 +574,9 @@ function add_pr_nums(db)
     pr_df |> SQLite.load!(db, "pull_request_build")
 end
 
-function create_sample_pstat_df(db)
+function create_sample_pstat_df()
     @time begin
-        _db = SQLite.DB(db)
+        _db = SQLite.DB("julia.db")
 
         pstat_series_table = DBInterface.execute(_db, "SELECT * FROM pstat_series") |> DataFrame
         # need to tranform into vector as indexing into df extremely slow
