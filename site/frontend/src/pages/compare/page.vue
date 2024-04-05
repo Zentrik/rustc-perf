@@ -70,7 +70,7 @@ const loading = ref(false);
 const selector = loadSelectorFromUrl(urlParams);
 
 const data: Ref<CompareResponse | null> = ref(null);
-await loadCompareData(selector, loading);
+loadCompareData(selector, loading);
 const info = await loadBenchmarkInfo();
 </script>
 
