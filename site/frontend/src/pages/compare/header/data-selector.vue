@@ -55,7 +55,7 @@ const opened = ref(false);
               <label for="start-bound">Before</label>
               <input
                 width="100em"
-                placeholder="YYYY-MM-DD or Commit SHA or PR #"
+                placeholder="YYYY-MM-DD, SHA, PR # or v1.x.x"
                 ref="startRef"
               />
             </div>
@@ -63,7 +63,7 @@ const opened = ref(false);
               <label for="end-bound">After</label>
               <input
                 width="100em"
-                placeholder="YYYY-MM-DD or Commit SHA or PR #"
+                placeholder="YYYY-MM-DD, SHA, PR # or v1.x.x"
                 ref="endRef"
               />
             </div>

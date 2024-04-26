@@ -155,6 +155,10 @@ pub trait Connection: Send + Sync {
     ///
     async fn parent_of(&self, sha: &str) -> Option<String>;
 
+    /// Returns the sha of a tag, if available.
+    ///
+    async fn tag_to_sha(&self, tag: &str) -> Option<String>;
+
     /// Returns the PR of the parent commit, if available.
     ///
     async fn pr_of(&self, sha: &str) -> Option<u32>;

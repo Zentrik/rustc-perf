@@ -1205,6 +1205,11 @@ where
             .unwrap()
             .map(|r| r.get(0))
     }
+
+    async fn tag_to_sha(&self, _tag: &str) -> Option<String> {
+        unimplemented!("Fetching sha of a tag is not implemented for postgres")
+    }
+    
     async fn pr_of(&self, sha: &str) -> Option<u32> {
         self.conn()
             .query_opt(

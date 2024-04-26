@@ -1193,6 +1193,16 @@ impl Connection for SqliteConnection {
         shas.pop()
     }
 
+    async fn tag_to_sha(&self, tag: &str) -> Option<String> {
+        self.raw_ref()
+            .query_row("select sha from tags where tag = ?", params![tag], |row| {
+                Ok(row.get::<_, Option<String>>(0).unwrap())
+            })
+            .optional()
+            .unwrap()
+            .flatten()
+    }
+
     async fn pr_of(&self, sha: &str) -> Option<u32> {
         self.raw_ref()
             .query_row(

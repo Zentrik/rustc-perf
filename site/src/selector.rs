@@ -49,6 +49,22 @@ pub async fn artifact_id_for_bound(
             }
         }
     }
+    if commit.is_none() {
+        if let Bound::Commit(c) = &bound {
+            let tag_commit = ctxt
+                .conn()
+                .await
+                .tag_to_sha(c.as_str())
+                .await
+                .map(Bound::Commit);
+            if let Some(tag_bound) = tag_commit {
+                commit = commits
+                    .iter()
+                    .rfind(|commit| tag_bound.right_match(master_commits, commit))
+                    .cloned()
+            }
+        }
+    }
     commit.map(ArtifactId::Commit).or_else(|| {
         data.artifacts()
             .find(|aid| match &bound {
@@ -64,11 +80,7 @@ pub async fn artifact_id_for_bound(
 pub fn range_subset(data: Vec<Commit>, range: RangeInclusive<Bound>) -> Vec<Commit> {
     let (a, b) = range.into_inner();
 
-    let commits_on_master: Vec<Commit> = data
-        .iter()
-        .filter(|c| c.is_master())
-        .cloned()
-        .collect();
+    let commits_on_master: Vec<Commit> = data.iter().filter(|c| c.is_master()).cloned().collect();
 
     let left_idx = data
         .iter()
