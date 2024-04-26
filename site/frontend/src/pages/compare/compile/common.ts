@@ -34,7 +34,11 @@ export function shouldShowTestCase(
   if (!nameFilter) {
     return true
    } else if (filter.regex) {
-    return name.match(nameFilter);;
+    try {
+      return name.match(nameFilter);
+    } catch {
+      return false;
+    }
   } else {
     return name.includes(nameFilter);
   }
