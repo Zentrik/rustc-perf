@@ -4,6 +4,7 @@ using LibGit2, Dates
 include("upload_nanosoldier_to_db.jl")
 
 const sleep_time = Dates.Minute(5)
+const db_path = "/media/rag/NVME/Code/rustc-perf-db/julia.db"
 
 # Taken from PProf.jl
 const proc = Ref{Union{Base.Process,Nothing}}(nothing)
@@ -11,7 +12,7 @@ function start_server()
     if !isnothing(proc[])
         error("Server already running")
     end
-    proc[] = open(pipeline(`$(joinpath(@__DIR__, "prod_site")) julia.db`, stdout=stdout), read=false)
+    proc[] = open(pipeline(`$(joinpath(@__DIR__, "prod_site")) $db_path`, stdout=stdout), read=false)
 end
 function kill_server()
     if !isnothing(proc[])
@@ -48,7 +49,7 @@ function main()
                         changed = true
                         kill_server()
                         println("$(benchmark_dir) changed")
-                        process_benchmarks(benchmark_dir)
+                        process_benchmarks(benchmark_dir, db_path)
                     end
                 end
             end
@@ -61,3 +62,6 @@ function main()
         sleep(sleep_time)
     end
 end
+
+isinteractive() || main()
+
