@@ -230,6 +230,7 @@ function create_pstat_series(benchmark_table)
 end
 
 # TODO: Seperate out setup and processing
+# Don't pass a dir starting with ~, doesn't work
 function process_benchmarks(dir, db_path)
     db = SQLite.DB(db_path)
 
@@ -646,4 +647,13 @@ function create_sample_pstat_df(db_path)
     end
 
     return df
+end
+
+function create_tags_db(db_path)
+    tags_details = HTTP.get("https://api.github.com/repos/JuliaLang/julia/git/refs/tags", headers=headers).body |> JSON3.read
+
+    df = DataFrame((tag=tag_details.ref[length("refs/tags/")+1:end], sha=tag_details.object.sha) for tag_details in tags_details)
+
+    db = SQLite.DB(db_path)
+    @time SQLite.load!(df, db, "tags"; replace=true)
 end

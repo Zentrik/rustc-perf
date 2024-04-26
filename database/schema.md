@@ -8,6 +8,7 @@ These are the tables that we use, `upload_nanosoldier_to_db` should always have 
 11 │ benchmark
 pull_request_build
 16 │ pstat_series
+tags
 
 # Schema
 
@@ -266,4 +267,16 @@ sqlite> select * from error limit 1;
 aid         benchmark   error
 ----------  ---         -----
 1           syn-1.0.89  Failed to compile...
+```
+
+### tags
+Records tag name and sha for all tags in Julia repo
+
+```
+sqlite> select * from tags limit 1;
++------+------------------------------------------+
+| tag  |                   sha                    |
++------+------------------------------------------+
+| v0.1 | e9263b7025725fb7297040318df06d5f86b94721 |
++------+------------------------------------------+
 ```
