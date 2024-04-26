@@ -11,6 +11,7 @@ export type CompileBenchmarkFilter = BenchmarkFilter;
 
 export const defaultCompileFilter: CompileBenchmarkFilter = {
   name: null,
+  regex: false,
   nonRelevant: false,
   showRawData: false,
 };
@@ -30,9 +31,13 @@ export function shouldShowTestCase(
 ) {
   const name = comparison.test_case.benchmark;
   const nameFilter = filter.name && filter.name.trim();
-  const nameFiltered = !nameFilter || name.includes(nameFilter);
-
-  return nameFiltered;
+  if (!nameFilter) {
+    return true
+   } else if (filter.regex) {
+    return name.match(nameFilter);;
+  } else {
+    return name.includes(nameFilter);
+  }
 }
 
 export function testCaseKey(testCase: CompileTestCase): string {
