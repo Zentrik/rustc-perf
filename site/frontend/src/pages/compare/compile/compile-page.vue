@@ -29,6 +29,11 @@ function loadFilterFromUrl(
 ): CompileBenchmarkFilter {
   return {
     name: urlParams["name"] ?? defaultFilter.name,
+    regex: getBoolOrDefault(
+      urlParams,
+      "regex",
+      defaultFilter.regex
+    ),
     nonRelevant: getBoolOrDefault(
       urlParams,
       "nonRelevant",
@@ -66,6 +71,7 @@ function storeFilterToUrl(
   }
 
   storeOrReset("name", filter.name || null, defaultFilter.name);
+  storeOrReset("regex", filter.regex, defaultFilter.regex);
   storeOrReset("nonRelevant", filter.nonRelevant, defaultFilter.nonRelevant);
   storeOrReset("showRawData", filter.showRawData, defaultFilter.showRawData);
 

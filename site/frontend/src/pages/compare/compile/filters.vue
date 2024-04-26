@@ -44,6 +44,16 @@ const opened = createPersistedRef(PREF_FILTERS_OPENED);
           <div class="section">
             <div class="section-heading">Filter</div>
             <input id="filter" type="text" v-model="filter.name" />
+            <button
+              class="regex-toggle"
+              :class="{ active: filter.regex }"
+              @click="filter.regex=!filter.regex"
+            >
+              .*
+              <span class="regex-tooltiptext">
+                Use Regular Expression
+              </span>
+            </button>
           </div>
           <div class="section">
             <div class="section-heading">
@@ -132,5 +142,43 @@ const opened = createPersistedRef(PREF_FILTERS_OPENED);
 
 .label {
   font-weight: bold;
+}
+
+.regex-toggle {
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 5px;
+  position: relative;
+  margin-left: 5px;
+}
+
+.regex-toggle.active {
+  background-color: #bed6ed;
+  border-color: #005fb8;
+}
+
+.regex-toggle:hover .regex-tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+.regex-tooltiptext {
+  width: 180px;
+  visibility: hidden;
+  color: white;
+  background-color: #524d4d;
+  text-align: center;
+  padding: 5px;
+  border-radius: 6px;
+
+  position: absolute;
+  bottom: 125%;
+  margin-left: -60px;
+
+  opacity: 0;
+  transition: opacity 0.3s, visibility 0.3s;
 }
 </style>

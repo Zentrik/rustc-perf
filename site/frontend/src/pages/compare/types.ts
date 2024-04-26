@@ -3,6 +3,7 @@ import {TestCaseComparison} from "./data";
 
 export interface BenchmarkFilter {
   name: string | null;
+  regex: boolean;
   nonRelevant: boolean;
   showRawData: boolean;
 }
