@@ -48,8 +48,6 @@ function SummaryTable({summary}: {summary: SummaryGroup}) {
     <TabComponent
       tooltip="Benchmarks: measure how long does it take to execute various benchmarks."
       title="Benchmarks"
-      :selected="activeTab === Tab.CompileTime"
-      @click="changeTab(Tab.CompileTime)"
     >
       <template v-slot:summary>
         <SummaryTable :summary="compileTimeSummary" />
