@@ -109,7 +109,7 @@ async function renderGraph(
   chartRef: Ref<HTMLElement | null>
 ) {
   const opts: GraphRenderOpts = {
-    width: Math.min(window.innerWidth - 40, 465),
+    width: Math.min(window.innerWidth - 140, 465),
     height: 300,
     renderTitle: false
   };

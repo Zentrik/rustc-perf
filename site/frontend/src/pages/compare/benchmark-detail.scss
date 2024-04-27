@@ -7,10 +7,6 @@
   .grow {
     flex-grow: 1;
   }
-
-  &.graphs {
-    flex-wrap: nowrap;
-  }
 }
 
 .graphs {
@@ -28,6 +24,7 @@
 }
 
 .title {
+
   &.bold,
   .bold {
     font-weight: bold;
