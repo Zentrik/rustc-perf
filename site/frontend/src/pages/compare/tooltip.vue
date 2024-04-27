@@ -39,6 +39,13 @@
   transition: opacity 0.3s, visibility 0.3s;
 }
 
+@media screen and (max-width: 600px) {
+  .tooltiptext {
+    width: 120px;
+    margin-left: -60px;
+  }
+}
+
 .tooltip:hover .tooltiptext {
   visibility: visible;
   opacity: 1;

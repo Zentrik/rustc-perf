@@ -181,4 +181,10 @@ const opened = createPersistedRef(PREF_FILTERS_OPENED);
   opacity: 0;
   transition: opacity 0.3s, visibility 0.3s;
 }
+@media screen and (max-width: 600px) {
+  .regex-tooltiptext {
+    width: 120px;
+    margin-left: -180px;
+  }
+}
 </style>
