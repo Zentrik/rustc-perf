@@ -4,7 +4,7 @@ import Tooltip from "../../tooltip.vue";
 import {ArtifactDescription} from "../../types";
 import {percentClass} from "../../shared";
 import {CompileTestCase} from "../common";
-import {computed} from "vue";
+import {computed, onMounted, onBeforeUnmount, ref, watchEffect} from 'vue';
 import {testCaseKey} from "../common";
 import BenchmarkDetail from "./benchmark-detail.vue";
 import Accordion from "../../../../components/accordion.vue";
@@ -24,13 +24,24 @@ function prettifyRawNumber(number: number): string {
 }
 
 // Modify this when changing the number of columns in the table!
-const columnCount = computed(() => {
-  const base = 5;
-  if (props.showRawData) {
-    return base + 2;
-  }
-  return base;
+const columnCount = ref(5); // initial value
+const updateColumnCount = () => {
+  const base = window.matchMedia('(max-width: 400px)').matches ? 3 : 5;
+  columnCount.value = props.showRawData ? base + 2 : base;
+};
+watchEffect(() => {
+  updateColumnCount();
 });
+
+onMounted(() => {
+  updateColumnCount();
+  window.addEventListener('resize', updateColumnCount);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateColumnCount);
+});
+
 const unit = computed(() => {
   // The DB stored wall-time data in nanoseconds for compile benchmarks, so it is
   // hardcoded here
@@ -202,7 +213,7 @@ const unit = computed(() => {
 
     &>div,
     &>span {
-      width: 50px;
+      width: 60px;
     }
   }
 
