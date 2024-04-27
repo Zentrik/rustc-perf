@@ -20,35 +20,49 @@ const props = defineProps<{
 }>();
 
 function prettifyRawNumber(number: number): string {
+  if (number > 1000) {
+    number = Math.round(number);
+  }
   return number.toLocaleString();
 }
 
-// Modify this when changing the number of columns in the table!
-const columnCount = ref(5); // initial value
-const updateColumnCount = () => {
-  const base = window.matchMedia('(max-width: 400px)').matches ? 3 : 5;
-  columnCount.value = props.showRawData ? base + 2 : base;
+const showSignificanceData = ref(true);
+const updateShowSignificanceData = () => {
+  let width_of_cols = 97.8 * (3 + (props.showRawData ? 2 : 0)) + 14 + 50; // Excluding benchmark name column
+  let width_with_sig_data = width_of_cols + 97.8*2 + 50;
+  showSignificanceData.value = !window.matchMedia(`(max-width: ${width_with_sig_data}px)`).matches;
 };
-watchEffect(() => {
-  updateColumnCount();
-});
-
 onMounted(() => {
-  updateColumnCount();
-  window.addEventListener('resize', updateColumnCount);
+  updateShowSignificanceData();
+  window.addEventListener('resize', updateShowSignificanceData);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateColumnCount);
+  window.removeEventListener('resize', updateShowSignificanceData);
+});
+// Modify this when changing the number of columns in the table!
+const columnCount = ref(5); // initial value
+const updateColumnCount = () => {
+  let base = 5;
+  if (!showSignificanceData.value) {
+    base -= 2;
+  }
+  if (props.showRawData) {
+    base += 2;
+  }
+  columnCount.value = base;
+};
+watchEffect(() => {
+  updateColumnCount();
 });
 
 const unit = computed(() => {
   // The DB stored wall-time data in nanoseconds for compile benchmarks, so it is
   // hardcoded here
   if (props.stat.split("-").pop() == "time") {
-    return "ns";
+    return "(ns)";
   } else if (props.stat == "memory") {
-    return "B";
+    return "(B)";
   } else {
     return null;
   }
@@ -65,9 +79,9 @@ const unit = computed(() => {
       <thead>
         <tr>
           <th class="toggle-arrow"></th>
-          <th>Benchmark</th>
+          <th class="benchmark_name">Benchmark</th>
           <th class="pct-change">% Change</th>
-          <th class="narrow">
+          <th v-if="showSignificanceData" class="narrow">
             Significance Threshold
             <Tooltip>
               The minimum % change that is considered significant. The higher
@@ -79,7 +93,7 @@ const unit = computed(() => {
               how the significance threshold is calculated.
             </Tooltip>
           </th>
-          <th class="narrow">
+          <th v-if="showSignificanceData" class="narrow">
             Significance Factor
             <Tooltip>
               How much a particular result is over the significance threshold. A
@@ -87,8 +101,8 @@ const unit = computed(() => {
               significance threshold.
             </Tooltip>
           </th>
-          <th v-if="showRawData" class="raw-data">Before</th>
-          <th v-if="showRawData" class="raw-data">After</th>
+          <th v-if="showRawData" class="raw-data">Before {{ unit }}</th>
+          <th v-if="showRawData" class="raw-data">After {{ unit }}</th>
         </tr>
       </thead>
       <tbody>
@@ -107,7 +121,7 @@ const unit = computed(() => {
                   </span>
                 </div>
               </td>
-              <td class="narrow">
+              <td v-if="showSignificanceData" class="narrow">
                 <div class="numeric-aligned">
                   <div>
                     {{
@@ -120,7 +134,7 @@ const unit = computed(() => {
                   </div>
                 </div>
               </td>
-              <td class="narrow">
+              <td v-if="showSignificanceData" class="narrow">
                 <div class="numeric-aligned">
                   <div>
                     {{
@@ -133,12 +147,12 @@ const unit = computed(() => {
               </td>
               <td v-if="showRawData" class="numeric">
                 <abbr :title="comparison.comparison.statistics[0].toString()">
-                  {{ prettifyRawNumber(comparison.comparison.statistics[0]) }}{{ unit }}
+                  {{ prettifyRawNumber(comparison.comparison.statistics[0]) }}
                 </abbr>
               </td>
               <td v-if="showRawData" class="numeric">
                 <abbr :title="comparison.comparison.statistics[1].toString()">
-                  {{ prettifyRawNumber(comparison.comparison.statistics[1]) }}{{ unit }}
+                  {{ prettifyRawNumber(comparison.comparison.statistics[1]) }}
                 </abbr>
               </td>
             </template>
@@ -237,9 +251,11 @@ const unit = computed(() => {
   text-overflow: ellipsis;
 }
 
-@media screen and (max-width: 400px) {
-  .narrow {
-    display: none;
-  }
+abbr {
+  text-decoration-thickness: from-font;
+}
+
+:deep(.tooltiptext) {
+  margin-left: -169px !important;
 }
 </style>

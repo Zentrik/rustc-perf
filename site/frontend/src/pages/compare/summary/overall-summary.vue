@@ -13,7 +13,7 @@ const summary = computed(() => props.summary);
 <template>
   <div class="main-summary">
     <SummaryTable :summary="summary"></SummaryTable>
-    <div style="position: absolute; right: 5px; top: 5px">
+    <div class="tooltip-container">
       <Tooltip style="margin-right: 1em">
         The table shows summaries of regressions, improvements and all changes
         calculated from data that is currently visible (data that passes the
@@ -33,4 +33,24 @@ const summary = computed(() => props.summary);
   justify-content: center;
   position: relative;
 }
+
+.tooltip-container {
+  position: absolute;
+  right: -7px;
+  top: 5px
+}
+
+:deep(.tooltiptext) {
+  margin-left: -178px !important;
+}
+
+@media screen and (max-width: 600px) {
+  .tooltip-container {
+    left: 5px;
+  }
+  :deep(.tooltiptext) {
+    margin-left: -22px !important;
+  }
+}
+
 </style>

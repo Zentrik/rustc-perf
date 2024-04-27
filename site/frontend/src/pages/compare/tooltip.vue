@@ -33,7 +33,7 @@
 
   position: absolute;
   bottom: 125%;
-  margin-left: -60px;
+  margin-left: -80px;
 
   opacity: 0;
   transition: opacity 0.3s, visibility 0.3s;
