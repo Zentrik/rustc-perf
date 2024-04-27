@@ -19,7 +19,7 @@ function SummaryTable({summary}: {summary: SummaryGroup}) {
           <thead>
             <tr>
               <th>Range</th>
-              <th>Mean</th>
+              <th style="padding-left: 1.4rem">Mean</th>
             </tr>
           </thead>
           <thead>
@@ -27,7 +27,7 @@ function SummaryTable({summary}: {summary: SummaryGroup}) {
               <td>
                 <SummaryRange range={summary.all.range} />
               </td>
-              <td>
+              <td style="padding-left: 1.2rem">
                 <SummaryPercentValue
                   class={percentClass(summary.all.average)}
                   value={summary.all.average}
