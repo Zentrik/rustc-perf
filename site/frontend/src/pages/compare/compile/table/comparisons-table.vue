@@ -55,7 +55,7 @@ const unit = computed(() => {
         <tr>
           <th class="toggle-arrow"></th>
           <th>Benchmark</th>
-          <th>% Change</th>
+          <th class="pct-change">% Change</th>
           <th class="narrow">
             Significance Threshold
             <Tooltip>
@@ -76,8 +76,8 @@ const unit = computed(() => {
               significance threshold.
             </Tooltip>
           </th>
-          <th v-if="showRawData">Before</th>
-          <th v-if="showRawData">After</th>
+          <th v-if="showRawData" class="raw-data">Before</th>
+          <th v-if="showRawData" class="raw-data">After</th>
         </tr>
       </thead>
       <tbody>
@@ -85,7 +85,9 @@ const unit = computed(() => {
           <Accordion :id="testCaseKey(comparison.test_case)">
             <template v-slot:default>
               <td>
-                {{ comparison.test_case.benchmark }}
+                <div class="benchmark_name">
+                  {{ comparison.test_case.benchmark }}
+                </div>
               </td>
               <td>
                 <div class="numeric-aligned">
@@ -149,7 +151,7 @@ const unit = computed(() => {
 <style scoped lang="scss">
 .benches {
   width: 100%;
-  table-layout: auto;
+  table-layout: fixed;
   font-size: medium;
   border-collapse: collapse;
 
@@ -179,8 +181,14 @@ const unit = computed(() => {
   th {
     text-align: center;
 
-    &.narrow {
-      max-width: 100px;
+    &.narrow, &.pct-change {
+      word-wrap: break-word;
+      width: 90px;
+    }
+
+    &.raw-data {
+      width:90px;
+      text-align: right;
     }
   }
 }
@@ -194,7 +202,7 @@ const unit = computed(() => {
 
     &>div,
     &>span {
-      width: 70px;
+      width: 50px;
     }
   }
 
@@ -209,5 +217,18 @@ const unit = computed(() => {
 
 .silent-link {
   color: inherit;
+}
+
+.benchmark_name {
+  padding-left: 1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media screen and (max-width: 400px) {
+  .narrow {
+    display: none;
+  }
 }
 </style>
