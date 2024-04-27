@@ -50,14 +50,10 @@ function graphLink(
     <div class="columns">
       <div class="rows grow">
         <div class="title bold">Benchmark info</div>
-        <table>
-          <tbody>
-            <tr>
-              <td>Benchmark</td>
-              <td>{{ testCase.benchmark }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="benchmark-container">
+          <div class="benchmark-label">Benchmark</div>
+          <div class="benchmark-value">{{ testCase.benchmark }}</div>
+        </div>
       </div>
       <div class="rows grow links">
         <div class="title bold">Links</div>
@@ -100,18 +96,22 @@ function graphLink(
   text-align: left;
 }
 
-table {
-  align-self: flex-start;
-  margin-right: 20px;
+.benchmark-container {
+  display: flex;
+  align-items: center;
+}
 
-  td {
-    text-align: left;
+.benchmark-label {
+  flex: 0;
+  text-align: left;
+  font-weight: bold;
+  padding-right: 10px;
+}
 
-    &:first-child {
-      font-weight: bold;
-      padding-right: 10px;
-    }
-  }
+.benchmark-value {
+  flex: 1;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .links {
