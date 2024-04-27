@@ -32,6 +32,7 @@ const expanded = computed(() => isExpanded(props.id));
 
   .toggle-arrow {
     padding-right: 5px;
+    width: 5px;
   }
 
   &:hover,
