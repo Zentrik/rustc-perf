@@ -67,7 +67,11 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
                     if artifact_row.type == "try"
                         commit_sha = filter(file -> endswith(file, ".json") && contains(file, r".(minimum|median|mean).json"), readdir(data)) .|> get_sha |> unique
-                        parent_sha = commit_sha[1] == sha ? commit_sha[2] : commit_sha[1]
+                        if length(commit_sha) == 1 # PRs can be benchmarked without comparing to anything
+                            parent_sha = sha
+                        else
+                            parent_sha = commit_sha[1] == sha ? commit_sha[2] : commit_sha[1]
+                        end
                     end
 
                     pr_details = HTTP.get("https://api.github.com/repos/JuliaLang/Julia/commits/$sha/pulls", headers=headers).body |> JSON3.read
