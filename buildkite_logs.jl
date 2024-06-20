@@ -1,6 +1,6 @@
-using HTTP, JSON3
+using HTTP, JSON3, DataFrames
 
-function get_binaryurl(page)
+function get_logs(page)
     url = "https://buildkite.com/julialang/julia-master/builds?branch=master&page=$page"
 
     r = HTTP.get(url)
@@ -26,53 +26,106 @@ function get_binaryurl(page)
     return sha_to_logs
 end
 
-function parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
-    @views for (sha, log) in sha_to_logs
-        binary_size_start_idx = (findfirst("==> ./julia binary sizes", log) |> last) + 1
-        binary_size_end_idx = (findfirst("==> ./julia launch speedtest", log) |> first) - 1
+function get_log(sha, branch)
+    url = "https://buildkite.com/julialang/julia-$branch/builds?commit=$sha"
 
-        binaries = eachmatch(r"/([a-zA-Z.]+)[[:blank:]]+:", log[binary_size_start_idx:binary_size_end_idx]) |> collect
-        for (i, binary) in pairs(binaries)
-            binary_name = binary.captures[1]
-            sha_to_binary_sizes[sha][binary_name] = Dict{String,UInt64}()
+    r = HTTP.get(url)
+    html = String(r.body)
 
-            next_binary = i == lastindex(binaries) ? binary_size_end_idx : binaries[i+1].match.offset + binary_size_start_idx
+    build_num = match(r"julialang/julia-\w*/builds/(\d+)", html).captures[1]
 
-            for m in eachmatch(r"([a-zA-Z.]+)[[:blank:]]*(\d+)", log[binary_size_start_idx+binary.match.offset:next_binary])
-                sha_to_binary_sizes[sha][binary_name][m.captures[1]] = parse(UInt64, m.captures[2])
-            end
+    details_url = "https://buildkite.com/" * match(r"julialang/julia-\w*/builds/\d+", html).match * ".json"
+    details_json = HTTP.get(details_url).body |> JSON3.read
+    idx = findfirst(x -> x.name == ":linux: build x86_64-linux-gnu", details_json.jobs)
+
+    logs_url = "https://buildkite.com/" * details_json.jobs[idx].base_path * "/raw_log"
+
+    return HTTP.get(logs_url).body |> String
+end
+
+@views function parse_log!(timings, binary_sizes, log)
+    binary_size_start_idx = (findfirst("==> ./julia binary sizes", log) |> last) + 1
+    binary_size_end_idx = (findfirst("==> ./julia launch speedtest", log) |> first) - 1
+
+    binaries = eachmatch(r"/([a-zA-Z.]+)[[:blank:]]+:", log[binary_size_start_idx:binary_size_end_idx]) |> collect
+    for (i, binary) in pairs(binaries)
+        binary_name = binary.captures[1]
+        binary_sizes[binary_name] = Dict{String,UInt64}()
+
+        next_binary = i == lastindex(binaries) ? binary_size_end_idx : binaries[i+1].match.offset + binary_size_start_idx
+
+        for m in eachmatch(r"([a-zA-Z.]+)[[:blank:]]*(\d+)", log[binary_size_start_idx+binary.match.offset:next_binary])
+            binary_sizes[binary_name][m.captures[1]] = parse(UInt64, m.captures[2])
         end
+    end
 
-        speedtest_start_idx = (findfirst("==> ./julia launch speedtest", log) |> last) + 1
-        speedtest_end_idx = (findfirst("Create build artifacts", log) |> first) - 1
+    speedtest_start_idx = (findfirst("==> ./julia launch speedtest", log) |> last) + 1
+    speedtest_end_idx = (findfirst("Create build artifacts", log) |> first) - 1
 
-        for m in eachmatch(r"[^\[]([\d.]+)[[:blank:]]*([a-zA-Z]+)", log[speedtest_start_idx:speedtest_end_idx])
-            if !haskey(sha_to_timings[sha], m.captures[2])
-                sha_to_timings[sha][m.captures[2]] = Float64[]
-            end
-            push!(sha_to_timings[sha][m.captures[2]], parse(Float64, m.captures[1]))
+    for m in eachmatch(r"[^\[]([\d.]+)[[:blank:]]*([a-zA-Z]+)", log[speedtest_start_idx:speedtest_end_idx])
+        if !haskey(timings, m.captures[2])
+            timings[m.captures[2]] = Float64[]
         end
+        push!(timings[m.captures[2]], parse(Float64, m.captures[1]))
     end
 end
 
-sha_to_logs = get_binaryurl(1)
-sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs))
-sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs))
-
-parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
-
-# for (sha, timing_series) in sha_to_timings, (name, timings) in timing_series
-#     println(name, "\n ", sum(timings) / length(timings))
-# end
-
-for (sha, binary_sizes) in sha_to_binary_sizes
-    println(sha, ": ", binary_sizes["sys.so"]["Total"] |> Int)
+function parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
+    for (sha, log) in sha_to_logs
+        parse_log!(sha_to_timings[sha], sha_to_binary_sizes[sha], log)
+    end
 end
 
+function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metric_to_series_id)
+    log = get_log(sha, branch)
+
+    timings = Dict{String,Vector{Float64}}()
+    binary_sizes = Dict{String,Dict{String,UInt64}}()
+    parse_log!(timings, binary_sizes, log)
+
+    for (binary, sizes) in binary_sizes
+        push!(artifact_size_df, (aid=aid, component=binary, size=sizes["Total"]))
+    end
+
+    for (timing_series, time) in timings
+        push!(pstat_df, (aid=aid, series=init_metric_to_series_id[timing_series], value=time))
+    end
+end
+
+@testset "Processing Commit" begin
+    artifact_size_df = DataFrame()
+    pstat_df = DataFrame()
+
+    aid = 23
+    sha = "0a491e00a1f38b814ca173bd7d9bffeadde65738"
+    branch = "master"
+
+    init_metric_to_series_id = Dict(x => x for x in ["inputs", "major", "elapsed", "system", "user", "avgtext", "outputs", "avgdata", "swaps", "minor", "maxresident"])
+
+    process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metric_to_series_id)
+    @test artifact_size_df == DataFrame(aid=[aid, aid, aid], component=["julia", "sys.so", "libjulia.so"], size=[9478, 197751633, 199055])
+    @test pstat_df == DataFrame(aid=[aid, aid, aid, aid, aid, aid, aid, aid, aid, aid, aid], series=["elapsed", "system", "user", "outputs", "minor", "swaps", "maxresident", "major", "avgtext", "avgdata", "inputs"], value=[[0.13, 0.13, 0.14], [0.07, 0.06, 0.07], [0.26, 0.28, 0.28], [0.0, 0.0, 0.0], [20532.0, 20531.0, 20598.0], [0.0, 0.0, 0.0], [180252.0, 180360.0, 180400.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+end
+
+# sha_to_logs = get_binaryurl(1)
+# sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs))
+# sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs))
+
+# parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
+
+# # for (sha, timing_series) in sha_to_timings, (name, timings) in timing_series
+# #     println(name, "\n ", sum(timings) / length(timings))
+# # end
+
+# for (sha, binary_sizes) in sha_to_binary_sizes
+#     println(sha, ": ", binary_sizes["sys.so"]["Total"] |> Int)
+# end
+
+using Test
 @testset "parsing logs" begin
     sha_to_logs_test = JSON3.read("sha_to_logs_test.json", Dict{String,String})
-    sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs))
-    sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs))
+    sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs_test))
+    sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs_test))
 
     parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs_test)
 
