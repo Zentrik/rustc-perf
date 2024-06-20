@@ -5,6 +5,8 @@ These are the tables that we use, `upload_nanosoldier_to_db` should always have 
 1 │ artifact
 3 │ pstat
 
+artifact_size
+
 11 │ benchmark
 pull_request_build
 16 │ pstat_series

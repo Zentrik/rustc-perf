@@ -6,6 +6,7 @@ using HTTP, JSON3
 
 const headers = nothing
 
+median(x) = sort(x)[div(length(x), 2)+1]
 function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
     println("Processing $path...")
     mktempdir() do dir
@@ -114,6 +115,17 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     next_artifact_id[] += 1
 
                     DBInterface.execute(db, "INSERT INTO artifact (id, name, date, type) VALUES ($(artifact_row.id), '$(artifact_row.name)', $(artifact_row.date), '$(artifact_row.type)')")
+
+                    # if artifact_row.type == "master"
+                    #     artifact_size_df = DataFrame()
+                    #     pstat_df = DataFrame()
+                    #     process_commit!(artifact_size_df, pstat_df, artifact_row.id, artifact_row.name, "master", identity)
+                    #     SQLite.load!(artifact_size_df, db, "artifact_size")
+                    #     for row in eachrow(pstat_df)
+                    #         metric = row.series in ("minor", "major") ? "$(row.series)-pagefaults" : row.series
+                    #         push_metric_to_pstat!(df, db, "init", "median-$metric", artifact_row.id, median(row.value), benchmark_to_pstat_series_id)
+                    #     end
+                    # end
                 else
                     artifact_id = artifact_query[1, "id"]
                 end
@@ -661,3 +673,31 @@ function create_tags_db(db_path)
     db = SQLite.DB(db_path)
     @time SQLite.load!(df, db, "tags"; replace=true)
 end
+
+# Inserting into pstat under different metrics is undesirable as the ui only shows one metric at a time
+# function process_log_commit(commit)
+#     db = SQLite.DB("/media/rag/NVME/Code/rustc-perf-db/julia.db")
+
+#     commit = "a14cc38512b6daab6b8417ebb8a64fc794ff89cc"
+#     artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(commit)' LIMIT 1") |> DataFrame
+
+#     pstat_series_table = DBInterface.execute(db, "SELECT * FROM pstat_series") |> DataFrame
+#     # need to tranform into vector as indexing into df extremely slow
+#     names_col = pstat_series_table[:, "crate"]
+#     metrics_col = pstat_series_table[:, "metric"]
+#     pstat_series_id_column = pstat_series_table[:, "id"]
+
+#     benchmark_to_pstat_series_id = Dict((name, metric) => id for (id, name, metric) in zip(pstat_series_id_column, names_col, metrics_col))
+
+#     artifact_size_df = DataFrame()
+#     pstat_df = DataFrame()
+#     process_commit!(artifact_size_df, pstat_df, artifact_query[1, :id], commit, "master", identity)
+#     SQLite.load!(artifact_size_df, db, "artifact_size")
+
+#     df = DataFrame()
+#     for row in eachrow(pstat_df)
+#         metric = row.series in ("minor", "major") ? "$(row.series)-pagefaults" : row.series
+#         push_metric_to_pstat!(df, db, "init", "median-$metric", artifact_query[1, :id], median(row.value), benchmark_to_pstat_series_id)
+#     end
+#     SQLite.load!(df, db, "pstat")
+# end
