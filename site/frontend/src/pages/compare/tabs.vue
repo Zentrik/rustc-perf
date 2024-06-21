@@ -1,14 +1,35 @@
 <script setup lang="tsx">
-import {h} from "vue";
-import {percentClass} from "./shared";
+import {h, ref, Ref} from "vue";
+import {CompareResponse, Tab} from "./types";
+import {
+  diffClass,
+  formatPercentChange,
+  formatSize,
+  percentClass,
+} from "./shared";
 import {SummaryGroup} from "./data";
 import SummaryPercentValue from "./summary/percent-value.vue";
 import SummaryRange from "./summary/range.vue";
 import TabComponent from "../../components/tab.vue";
 
-const props = defineProps<{
-  compileTimeSummary: SummaryGroup;
+const props = withDefaults(
+  defineProps<{
+    data: CompareResponse;
+    compileTimeSummary: SummaryGroup;
+    initialTab?: Tab;
+  }>(),
+  {
+    initialTab: Tab.CompileTime,
+  }
+);
+const emit = defineEmits<{
+  (e: "changeTab", tab: Tab): void;
 }>();
+
+function changeTab(tab: Tab) {
+  activeTab.value = tab;
+  emit("changeTab", tab);
+}
 
 function SummaryTable({summary}: {summary: SummaryGroup}) {
   const valid = summary.all.count > 0;
@@ -41,6 +62,26 @@ function SummaryTable({summary}: {summary: SummaryGroup}) {
   }
   return <div>No results</div>;
 }
+
+function formatArtifactSize(size: number): string {
+  if (size === 0) {
+    return "???";
+  }
+  return formatSize(size);
+}
+
+const totalSizeA = Object.values(props.data.a.component_sizes).reduce(
+  (a, b) => a + b,
+  0
+);
+const totalSizeB = Object.values(props.data.b.component_sizes).reduce(
+  (a, b) => a + b,
+  0
+);
+const sizesAvailable = totalSizeA > 0 || totalSizeB > 0;
+const bothSizesAvailable = totalSizeA > 0 && totalSizeB > 0;
+
+const activeTab: Ref<Tab> = ref(props.initialTab);
 </script>
 
 <template>
@@ -48,9 +89,34 @@ function SummaryTable({summary}: {summary: SummaryGroup}) {
     <TabComponent
       tooltip="Benchmarks: measure how long does it take to execute various benchmarks."
       title="Benchmarks"
+      :selected="activeTab === Tab.CompileTime"
+      @click="changeTab(Tab.CompileTime)"
     >
       <template v-slot:summary>
         <SummaryTable :summary="compileTimeSummary" />
+      </template>
+    </TabComponent>
+    <TabComponent
+      tooltip="Artifact size: sizes of individual components of the two artifacts."
+      title="Artifact size"
+      v-if="sizesAvailable"
+      :selected="activeTab === Tab.ArtifactSize"
+      @click="changeTab(Tab.ArtifactSize)"
+    >
+      <template v-slot:summary>
+        <div>
+          {{ formatArtifactSize(totalSizeA) }} ->
+          {{ formatArtifactSize(totalSizeB) }}
+        </div>
+        <div
+          v-if="bothSizesAvailable"
+          :class="diffClass(totalSizeB - totalSizeA)"
+        >
+          {{ totalSizeB < totalSizeA ? "-" : ""
+          }}{{ formatSize(Math.abs(totalSizeB - totalSizeA)) }} ({{
+            formatPercentChange(totalSizeA, totalSizeB)
+          }})
+        </div>
       </template>
     </TabComponent>
   </div>

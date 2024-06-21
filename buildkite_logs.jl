@@ -84,7 +84,9 @@ function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metr
     parse_log!(timings, binary_sizes, log)
 
     for (binary, sizes) in binary_sizes
-        push!(artifact_size_df, (aid=aid, component=binary, size=sizes["Total"]))
+        # SQLite doesn't support UInt64? so we convert to Int
+        # https://github.com/JuliaDatabases/SQLite.jl/issues/313
+        push!(artifact_size_df, (aid=aid, component=binary, size=Int(sizes["Total"])))
     end
 
     for (timing_series, time) in timings
