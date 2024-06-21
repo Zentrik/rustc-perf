@@ -46,3 +46,8 @@ export interface CompareResponse {
 
   compile_comparisons: TestCaseComparison<CompileTestCase>[];
 }
+
+export enum Tab {
+  CompileTime = "compile",
+  ArtifactSize = "artifact-size",
+}
