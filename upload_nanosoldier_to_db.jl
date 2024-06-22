@@ -57,7 +57,8 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                 artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(sha)' LIMIT 1") |> DataFrame
 
                 if sha ∉ processed_commits
-                    if !isempty(artifact_query) # all files for this commit should also hit continue so good
+                    # all files for this commit should also hit continue so good
+                    if !isempty(artifact_query) && DataFrame(DBInterface.execute(db, "SELECT EXISTS (SELECT * FROM pstat WHERE aid=$(artifact_query[1, :id]))"))[1, 1] == 1
                         continue
                         # TODO: Just overwrite data we also have results for not all data
                         # DBInterface.execute(db, "DELETE FROM pstat WHERE aid=$aid")
@@ -121,10 +122,10 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     #     pstat_df = DataFrame()
                     #     process_commit!(artifact_size_df, pstat_df, artifact_row.id, artifact_row.name, "master", identity)
                     #     SQLite.load!(artifact_size_df, db, "artifact_size")
-                    #     for row in eachrow(pstat_df)
-                    #         metric = row.series in ("minor", "major") ? "$(row.series)-pagefaults" : row.series
-                    #         push_metric_to_pstat!(df, db, "init", "median-$metric", artifact_row.id, median(row.value), benchmark_to_pstat_series_id)
-                    #     end
+                    #     # for row in eachrow(pstat_df)
+                    #     #     metric = row.series in ("minor", "major") ? "$(row.series)-pagefaults" : row.series
+                    #     #     push_metric_to_pstat!(df, db, "init", "median-$metric", artifact_row.id, median(row.value), benchmark_to_pstat_series_id)
+                    #     # end
                     # end
                 else
                     artifact_id = artifact_query[1, "id"]
