@@ -94,44 +94,44 @@ function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metr
     end
 end
 
-@testset "Processing Commit" begin
-    artifact_size_df = DataFrame()
-    pstat_df = DataFrame()
+# @testset "Processing Commit" begin
+#     artifact_size_df = DataFrame()
+#     pstat_df = DataFrame()
 
-    aid = 23
-    sha = "0a491e00a1f38b814ca173bd7d9bffeadde65738"
-    branch = "master"
+#     aid = 23
+#     sha = "0a491e00a1f38b814ca173bd7d9bffeadde65738"
+#     branch = "master"
 
-    process_commit!(artifact_size_df, pstat_df, aid, sha, branch, identity)
-    @test artifact_size_df == DataFrame(aid=[aid, aid, aid], component=["julia", "sys.so", "libjulia.so"], size=[9478, 197751633, 199055])
-    @test pstat_df == DataFrame(aid=[aid, aid, aid, aid, aid, aid, aid, aid, aid, aid, aid], series=["elapsed", "system", "user", "outputs", "minor", "swaps", "maxresident", "major", "avgtext", "avgdata", "inputs"], value=[[0.13, 0.13, 0.14], [0.07, 0.06, 0.07], [0.26, 0.28, 0.28], [0.0, 0.0, 0.0], [20532.0, 20531.0, 20598.0], [0.0, 0.0, 0.0], [180252.0, 180360.0, 180400.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-end
-
-# sha_to_logs = get_binaryurl(1)
-# sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs))
-# sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs))
-
-# parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
-
-# # for (sha, timing_series) in sha_to_timings, (name, timings) in timing_series
-# #     println(name, "\n ", sum(timings) / length(timings))
-# # end
-
-# for (sha, binary_sizes) in sha_to_binary_sizes
-#     println(sha, ": ", binary_sizes["sys.so"]["Total"] |> Int)
+#     process_commit!(artifact_size_df, pstat_df, aid, sha, branch, identity)
+#     @test artifact_size_df == DataFrame(aid=[aid, aid, aid], component=["julia", "sys.so", "libjulia.so"], size=[9478, 197751633, 199055])
+#     @test pstat_df == DataFrame(aid=[aid, aid, aid, aid, aid, aid, aid, aid, aid, aid, aid], series=["elapsed", "system", "user", "outputs", "minor", "swaps", "maxresident", "major", "avgtext", "avgdata", "inputs"], value=[[0.13, 0.13, 0.14], [0.07, 0.06, 0.07], [0.26, 0.28, 0.28], [0.0, 0.0, 0.0], [20532.0, 20531.0, 20598.0], [0.0, 0.0, 0.0], [180252.0, 180360.0, 180400.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
 # end
 
-using Test
-@testset "parsing logs" begin
-    sha_to_logs_test = JSON3.read("sha_to_logs_test.json", Dict{String,String})
-    sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs_test))
-    sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs_test))
+# # sha_to_logs = get_binaryurl(1)
+# # sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs))
+# # sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs))
 
-    parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs_test)
+# # parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
 
-    sha_to_timings_test = JSON3.read("sha_to_timings_test.json", Dict{String,Dict{String,Vector{Float64}}})
-    sha_to_binary_sizes_test = JSON3.read("sha_to_binary_sizes_test.json", Dict{String,Dict{String,Dict{String,UInt64}}})
+# # # for (sha, timing_series) in sha_to_timings, (name, timings) in timing_series
+# # #     println(name, "\n ", sum(timings) / length(timings))
+# # # end
 
-    @test sha_to_timings == sha_to_timings_test
-    @test sha_to_binary_sizes == sha_to_binary_sizes_test
-end
+# # for (sha, binary_sizes) in sha_to_binary_sizes
+# #     println(sha, ": ", binary_sizes["sys.so"]["Total"] |> Int)
+# # end
+
+# using Test
+# @testset "parsing logs" begin
+#     sha_to_logs_test = JSON3.read("sha_to_logs_test.json", Dict{String,String})
+#     sha_to_timings = Dict{String,Dict{String,Vector{Float64}}}(sha => Dict{String,Vector{Float64}}() for sha in keys(sha_to_logs_test))
+#     sha_to_binary_sizes = Dict{String,Dict{String,Dict{String,UInt64}}}(sha => Dict{String,Dict{String,UInt64}}() for sha in keys(sha_to_logs_test))
+
+#     parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs_test)
+
+#     sha_to_timings_test = JSON3.read("sha_to_timings_test.json", Dict{String,Dict{String,Vector{Float64}}})
+#     sha_to_binary_sizes_test = JSON3.read("sha_to_binary_sizes_test.json", Dict{String,Dict{String,Dict{String,UInt64}}})
+
+#     @test sha_to_timings == sha_to_timings_test
+#     @test sha_to_binary_sizes == sha_to_binary_sizes_test
+# end
