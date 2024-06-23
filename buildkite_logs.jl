@@ -38,6 +38,10 @@ function get_log(sha, branch)
     details_json = HTTP.get(details_url).body |> JSON3.read
     idx = findfirst(x -> x.name == ":linux: build x86_64-linux-gnu", details_json.jobs)
 
+    if details_json.jobs[idx].state != "finished"
+        return :not_finished
+    end
+
     logs_url = "https://buildkite.com/" * details_json.jobs[idx].base_path * "/raw_log"
 
     return HTTP.get(logs_url).body |> String
@@ -78,6 +82,9 @@ end
 
 function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metric_to_series_id)
     log = get_log(sha, branch)
+    if log == :not_finished
+        return :not_finished
+    end
 
     timings = Dict{String,Vector{Float64}}()
     binary_sizes = Dict{String,Dict{String,UInt64}}()

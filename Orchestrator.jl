@@ -47,18 +47,37 @@ function main()
             println("Error: $err") # Sometimes fetch fails
         end
 
-        if julia_fetched
-            shas = LibGit2.with(LibGit2.GitRevWalker(julia_repo)) do walker
-                LibGit2.map((oid, julia_repo) -> string(oid), walker)
-            end
-            idx = findfirst(x -> x == julia_old_head, shas)
-            shas = reverse(shas[1:(idx-1)])
+        try
+            if julia_fetched
+                shas = LibGit2.with(LibGit2.GitRevWalker(julia_repo)) do walker
+                    LibGit2.map((oid, julia_repo) -> string(oid), walker)
+                end
+                idx = findfirst(x -> x == julia_old_head, shas)
+                shas = reverse(shas[1:(idx-1)])
 
-            artifact_size_df, pstat_df = process_logs(db_path, shas, julia_repo)
-            changed |= !isempty(artifact_size_df)
+                artifact_size_df, pstat_df, first_unfinished_commit = process_logs(db_path, shas, julia_repo)
+                changed |= !isempty(artifact_size_df)
+                if !isempty(artifact_size_df)
+                    kill_server()
+                    db = SQLite.DB(db_path)
+                    SQLite.load!(artifact_size_df, db, "artifact_size")
+                end
+
+                if !isnothing(first_unfinished_commit)
+                    println("Commit $first_unfinished_commit not finished!")
+                    last_finished_commit = shas[findfirst(x -> x == first_unfinished_commit, shas)-1]
+                    println("Rolling back to prior to $first_unfinished_commit, i.e. $last_finished_commit")
+                    LibGit2.reset!(julia_repo, LibGit2.GitCommit(julia_repo, last_finished_commit), LibGit2.Consts.RESET_HARD)
+                end
+            end
+        catch
+            println("Error processing logs")
+            LibGit2.reset!(julia_repo, LibGit2.GitCommit(julia_repo, julia_old_head), LibGit2.Consts.RESET_HARD)
+            rethrow()
         end
 
         fetched = false
+        reports_old_head = string(LibGit2.head_oid(repo))
         try
             LibGit2.fetch(repo)
             LibGit2.merge!(repo, fastforward=true)
@@ -67,17 +86,23 @@ function main()
             println("Error: $err") # Sometimes fetch fails
         end
 
-        if fetched
-            for rel_dir in ("by_date", "by_hash")
-                for benchmark_dir in readdir(joinpath(nanosoldier_dir, "benchmark", rel_dir), join=true)
-                    if isdir(benchmark_dir) && fetch_time <= unix2datetime(mtime(benchmark_dir))
-                        changed = true
-                        kill_server()
-                        println("$(benchmark_dir) changed")
-                        process_benchmarks(benchmark_dir, db_path)
+        try
+            if fetched
+                for rel_dir in ("by_date", "by_hash")
+                    for benchmark_dir in readdir(joinpath(nanosoldier_dir, "benchmark", rel_dir), join=true)
+                        if isdir(benchmark_dir) && fetch_time <= unix2datetime(mtime(benchmark_dir))
+                            changed = true
+                            kill_server()
+                            println("$(benchmark_dir) changed")
+                            process_benchmarks(benchmark_dir, db_path)
+                        end
                     end
                 end
             end
+        catch
+            println("Error processing benchmarks")
+            LibGit2.reset!(repo, LibGit2.GitCommit(repo, reports_old_head), LibGit2.Consts.RESET_HARD)
+            rethrow()
         end
 
         if changed
@@ -94,7 +119,10 @@ function process_logs(db_path, shas, julia_repo)
 
     artifact_size_df = DataFrame()
     pstat_df = DataFrame()
+
+    first_unfinished_commit = nothing
     for sha in shas
+        println("Processing $sha log")
         artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(sha)' LIMIT 1") |> DataFrame
         artifact_id = if !isempty(artifact_query)
             artifact_query[1, "id"]
@@ -108,17 +136,27 @@ function process_logs(db_path, shas, julia_repo)
             artifact_row.id
         end
 
-        process_commit!(artifact_size_df, pstat_df, artifact_id, sha, "master", identity)
+        local res
+        try
+            res = process_commit!(artifact_size_df, pstat_df, artifact_id, sha, "master", identity)
+        catch
+            println("Error processing $sha logs")
+            println("Error: $err") # Sometimes fetch fails
+        end
+
+        if res == :not_finished
+            println("Commit $sha not finished")
+            first_unfinished_commit = sha
+            break
+        end
+
         # for row in eachrow(pstat_df)
         #     metric = row.series in ("minor", "major") ? "$(row.series)-pagefaults" : row.series
         #     push_metric_to_pstat!(df, db, "init", "median-$metric", artifact_row.id, median(row.value), benchmark_to_pstat_series_id)
         # end
     end
 
-    if !isempty(artifact_size_df)
-        SQLite.load!(artifact_size_df, db, "artifact_size")
-    end
-    return artifact_size_df, pstat_df
+    return artifact_size_df, pstat_df, first_unfinished_commit
 end
 
 isinteractive() || main()
