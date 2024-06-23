@@ -32,8 +32,8 @@ export function shouldShowTestCase(
   const name = comparison.test_case.benchmark;
   const nameFilter = filter.name && filter.name.trim();
   if (!nameFilter) {
-    return true
-   } else if (filter.regex) {
+    return true;
+  } else if (filter.regex) {
     try {
       return name.match(nameFilter);
     } catch {

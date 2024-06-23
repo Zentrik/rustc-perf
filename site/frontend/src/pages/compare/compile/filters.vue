@@ -46,13 +46,11 @@ const opened = createPersistedRef(PREF_FILTERS_OPENED);
             <input id="filter" type="text" v-model="filter.name" />
             <button
               class="regex-toggle"
-              :class="{ active: filter.regex }"
-              @click="filter.regex=!filter.regex"
+              :class="{active: filter.regex}"
+              @click="filter.regex = !filter.regex"
             >
               .*
-              <span class="regex-tooltiptext">
-                Use Regular Expression
-              </span>
+              <span class="regex-tooltiptext"> Use Regular Expression </span>
             </button>
           </div>
           <div class="section">
