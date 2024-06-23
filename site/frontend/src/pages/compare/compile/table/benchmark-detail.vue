@@ -20,7 +20,9 @@ const props = defineProps<{
 }>();
 
 function benchmarkLink(benchmark: string): string {
-  return `https://github.com/JuliaCI/BaseBenchmarks.jl/tree/master/src/${benchmark.split('.')[0]}`;
+  return `https://github.com/JuliaCI/BaseBenchmarks.jl/tree/master/src/${
+    benchmark.split(".")[0]
+  }`;
 }
 
 function graphLink(
@@ -80,9 +82,7 @@ function graphLink(
       :base-artifact="baseArtifact"
     />
     <div class="shortcut">
-      <ProfileShortcut
-          :test-case="props.testCase"
-        />
+      <ProfileShortcut :test-case="props.testCase" />
     </div>
   </div>
 </template>

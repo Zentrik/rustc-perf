@@ -37,7 +37,7 @@ const summary = computed(() => props.summary);
 .tooltip-container {
   position: absolute;
   right: -7px;
-  top: 5px
+  top: 5px;
 }
 
 :deep(.tooltiptext) {
@@ -52,5 +52,4 @@ const summary = computed(() => props.summary);
     margin-left: -22px !important;
   }
 }
-
 </style>

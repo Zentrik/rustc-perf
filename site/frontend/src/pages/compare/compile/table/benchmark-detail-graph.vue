@@ -111,7 +111,7 @@ async function renderGraph(
   const opts: GraphRenderOpts = {
     width: Math.min(window.innerWidth - 40, 465),
     height: 300,
-    renderTitle: false
+    renderTitle: false,
   };
   if (date !== null) {
     drawCurrentDate(opts, date);
@@ -240,8 +240,7 @@ onMounted(() => {
           Each plotted value is relative to the first commit of the commit range
         </div>
         <div style="font-size: 0.8em">
-          The shaded region shows values more recent than the
-          benchmarked commit
+          The shaded region shows values more recent than the benchmarked commit
         </div>
       </div>
       <div ref="relativeToFirstChartElement"></div>
@@ -253,8 +252,7 @@ onMounted(() => {
           Each plotted value is relative to its previous commit
         </div>
         <div style="font-size: 0.8em">
-          The shaded region shows values more recent than the
-          benchmarked commit
+          The shaded region shows values more recent than the benchmarked commit
         </div>
       </div>
       <div ref="relativeToPreviousChartElement"></div>

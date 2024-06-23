@@ -29,11 +29,7 @@ function loadFilterFromUrl(
 ): CompileBenchmarkFilter {
   return {
     name: urlParams["name"] ?? defaultFilter.name,
-    regex: getBoolOrDefault(
-      urlParams,
-      "regex",
-      defaultFilter.regex
-    ),
+    regex: getBoolOrDefault(urlParams, "regex", defaultFilter.regex),
     nonRelevant: getBoolOrDefault(
       urlParams,
       "nonRelevant",

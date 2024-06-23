@@ -4,7 +4,7 @@ import Tooltip from "../../tooltip.vue";
 import {ArtifactDescription} from "../../types";
 import {percentClass} from "../../shared";
 import {CompileTestCase} from "../common";
-import {computed, onMounted, onBeforeUnmount, ref, watchEffect} from 'vue';
+import {computed, onMounted, onBeforeUnmount, ref, watchEffect} from "vue";
 import {testCaseKey} from "../common";
 import BenchmarkDetail from "./benchmark-detail.vue";
 import Accordion from "../../../../components/accordion.vue";
@@ -29,16 +29,18 @@ function prettifyRawNumber(number: number): string {
 const showSignificanceData = ref(true);
 const updateShowSignificanceData = () => {
   let width_of_cols = 97.8 * (3 + (props.showRawData ? 2 : 0)) + 14 + 50; // Excluding benchmark name column
-  let width_with_sig_data = width_of_cols + 97.8*2 + 50;
-  showSignificanceData.value = !window.matchMedia(`(max-width: ${width_with_sig_data}px)`).matches;
+  let width_with_sig_data = width_of_cols + 97.8 * 2 + 50;
+  showSignificanceData.value = !window.matchMedia(
+    `(max-width: ${width_with_sig_data}px)`
+  ).matches;
 };
 onMounted(() => {
   updateShowSignificanceData();
-  window.addEventListener('resize', updateShowSignificanceData);
+  window.addEventListener("resize", updateShowSignificanceData);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateShowSignificanceData);
+  window.removeEventListener("resize", updateShowSignificanceData);
 });
 // Modify this when changing the number of columns in the table!
 const columnCount = ref(5); // initial value
@@ -88,8 +90,10 @@ const unit = computed(() => {
               the significance threshold, the noisier a test case is. You can
               see
               <a
-                href="https://github.com/rust-lang/rustc-perf/blob/master/docs/comparison-analysis.md#what-makes-a-test-result-significant">
-                here</a>
+                href="https://github.com/rust-lang/rustc-perf/blob/master/docs/comparison-analysis.md#what-makes-a-test-result-significant"
+              >
+                here</a
+              >
               how the significance threshold is calculated.
             </Tooltip>
           </th>
@@ -127,8 +131,8 @@ const unit = computed(() => {
                     {{
                       comparison.comparison.significance_threshold
                         ? (
-                          100 * comparison.comparison.significance_threshold
-                        ).toFixed(2) + "%"
+                            100 * comparison.comparison.significance_threshold
+                          ).toFixed(2) + "%"
                         : "-"
                     }}
                   </div>
@@ -139,7 +143,8 @@ const unit = computed(() => {
                   <div>
                     {{
                       comparison.comparison.significance_factor
-                        ? comparison.comparison.significance_factor.toFixed(2) + "x"
+                        ? comparison.comparison.significance_factor.toFixed(2) +
+                          "x"
                         : "-"
                     }}
                   </div>
@@ -201,7 +206,6 @@ const unit = computed(() => {
 }
 
 .benches {
-
   td,
   th {
     text-align: center;
@@ -211,27 +215,28 @@ const unit = computed(() => {
       width: 5px;
     }
 
-    &.narrow, &.pct-change {
+    &.narrow,
+    &.pct-change {
       word-wrap: break-word;
       width: 90px;
     }
 
     &.raw-data {
-      width:90px;
+      width: 90px;
       text-align: right;
     }
   }
 }
 
 .benches td {
-  &>.numeric-aligned {
+  & > .numeric-aligned {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: right;
 
-    &>div,
-    &>span {
+    & > div,
+    & > span {
       width: 60px;
     }
   }
