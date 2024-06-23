@@ -65,7 +65,8 @@ function main()
 
                 if !isnothing(first_unfinished_commit)
                     println("Commit $first_unfinished_commit not finished!")
-                    last_finished_commit = shas[findfirst(x -> x == first_unfinished_commit, shas)-1]
+                    idx = findfirst(x -> x == first_unfinished_commit, shas) - 1
+                    last_finished_commit = idx == 0 ? julia_old_head : shas[idx]
                     println("Rolling back to prior to $first_unfinished_commit, i.e. $last_finished_commit")
                     LibGit2.reset!(julia_repo, LibGit2.GitCommit(julia_repo, last_finished_commit), LibGit2.Consts.RESET_HARD)
                 end
