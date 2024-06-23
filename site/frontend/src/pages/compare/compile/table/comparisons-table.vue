@@ -206,6 +206,11 @@ const unit = computed(() => {
   th {
     text-align: center;
 
+    &.toggle-arrow {
+      padding-right: 5px;
+      width: 5px;
+    }
+
     &.narrow, &.pct-change {
       word-wrap: break-word;
       width: 90px;
