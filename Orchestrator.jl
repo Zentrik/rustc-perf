@@ -143,6 +143,12 @@ function process_logs(db_path, shas, julia_repo)
         catch err
             println("Error processing $sha logs")
             println("Error: $err") # Sometimes fetch fails
+            rethrow()
+        end
+
+        if res == :no_ci
+            println("Commit $sha has no CI")
+            continue
         end
 
         if res == :not_finished

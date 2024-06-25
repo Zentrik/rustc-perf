@@ -32,7 +32,11 @@ function get_log(sha, branch)
     r = HTTP.get(url)
     html = String(r.body)
 
-    build_num = match(r"julialang/julia-\w*/builds/(\d+)", html).captures[1]
+    build_num_matches = match(r"julialang/julia-\w*/builds/(\d+)", html)
+    if build_num_matches == nothing
+        return :no_ci
+    end
+    build_num = build_num_matches.captures[1]
 
     details_url = "https://buildkite.com/" * match(r"julialang/julia-\w*/builds/\d+", html).match * ".json"
     details_json = HTTP.get(details_url).body |> JSON3.read
@@ -51,14 +55,18 @@ end
     binary_size_start_idx = (findfirst("==> ./julia binary sizes", log) |> last) + 1
     binary_size_end_idx = (findfirst("==> ./julia launch speedtest", log) |> first) - 1
 
-    binaries = eachmatch(r"/([a-zA-Z.]+)[[:blank:]]+:", log[binary_size_start_idx:binary_size_end_idx]) |> collect
+    binaries = eachmatch(r"/([a-zA-Z\.\-0-9]+)[[:blank:]]+:", log[binary_size_start_idx:binary_size_end_idx]) |> collect
     for (i, binary) in pairs(binaries)
         binary_name = binary.captures[1]
+        libLLVM_matcher = match(r"libLLVM-\d+jl\.([a-zA-Z]+)", binary_name)
+        if libLLVM_matcher != nothing
+            binary_name = "libLLVM.$(libLLVM_matcher.captures[1])"
+        end
         binary_sizes[binary_name] = Dict{String,UInt64}()
 
         next_binary = i == lastindex(binaries) ? binary_size_end_idx : binaries[i+1].match.offset + binary_size_start_idx
 
-        for m in eachmatch(r"([a-zA-Z.]+)[[:blank:]]*(\d+)", log[binary_size_start_idx+binary.match.offset:next_binary])
+        for m in eachmatch(r"([a-zA-Z\.]+)[[:blank:]]*(\d+)", log[binary_size_start_idx+binary.match.offset:next_binary])
             binary_sizes[binary_name][m.captures[1]] = parse(UInt64, m.captures[2])
         end
     end
@@ -66,7 +74,7 @@ end
     speedtest_start_idx = (findfirst("==> ./julia launch speedtest", log) |> last) + 1
     speedtest_end_idx = (findfirst("Create build artifacts", log) |> first) - 1
 
-    for m in eachmatch(r"[^\[]([\d.]+)[[:blank:]]*([a-zA-Z]+)", log[speedtest_start_idx:speedtest_end_idx])
+    for m in eachmatch(r"[^\[]([\d\.]+)[[:blank:]]*([a-zA-Z]+)", log[speedtest_start_idx:speedtest_end_idx])
         if !haskey(timings, m.captures[2])
             timings[m.captures[2]] = Float64[]
         end
@@ -82,8 +90,8 @@ end
 
 function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metric_to_series_id)
     log = get_log(sha, branch)
-    if log == :not_finished
-        return :not_finished
+    if log isa Symbol
+        return log
     end
 
     timings = Dict{String,Vector{Float64}}()
