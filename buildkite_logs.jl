@@ -42,7 +42,13 @@ function get_log(sha, branch)
     details_json = HTTP.get(details_url).body |> JSON3.read
     idx = findfirst(x -> x.name == ":linux: build x86_64-linux-gnu", details_json.jobs)
 
-    if details_json.jobs[idx].state != "finished"
+    try
+        if details_json.jobs[idx].state != "finished"
+            return :not_finished
+        end
+    catch err
+        println("Error processing build status for $sha")
+        println("Error: $err")
         return :not_finished
     end
 
