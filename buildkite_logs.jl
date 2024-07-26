@@ -32,7 +32,7 @@ function get_log(sha, branch)
     r = HTTP.get(url)
     html = String(r.body)
 
-    build_num_matches = match(r"julialang/julia-\w*/builds/(\d+)", html)
+    build_num_matches = match(r"\"number\":(\d+)", html)
     if build_num_matches == nothing
         return :no_ci
     end
