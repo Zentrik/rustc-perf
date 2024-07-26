@@ -38,7 +38,7 @@ function get_log(sha, branch)
     end
     build_num = build_num_matches.captures[1]
 
-    details_url = "https://buildkite.com/" * match(r"julialang/julia-\w*/builds/\d+", html).match * ".json"
+    details_url = "https://buildkite.com/julialang/julia-$branch/builds/$build_num.json"
     details_json = HTTP.get(details_url).body |> JSON3.read
     idx = findfirst(x -> x.name == ":linux: build x86_64-linux-gnu", details_json.jobs)
 
