@@ -65,8 +65,18 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                         # artifact_query[1, "id"]
                     end
 
-                    # For a pr, we want parent_sha to be the commit it's compared to
-                    artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
+                    local artifact_row, parent_sha
+                    if isempty(artifact_query)
+                        # For a pr, we want parent_sha to be the commit it's compared to
+                        artifact_row, parent_sha = create_artifact_row(path, file, next_artifact_id[])
+                        next_artifact_id[] += 1
+
+                        DBInterface.execute(db, "INSERT INTO artifact (id, name, date, type) VALUES ($(artifact_row.id), '$(artifact_row.name)', $(artifact_row.date), '$(artifact_row.type)')")
+                    else
+                        artifact_row = (id=artifact_query[1, "id"], name=artifact_query[1, "name"], date=artifact_query[1, "date"], type=artifact_query[1, "type"])
+                        parent_sha = create_artifact_row(path, file, artifact_row.id)[2]
+                    end
+
                     if artifact_row.type == "try"
                         commit_sha = filter(file -> endswith(file, ".json") && contains(file, r".(minimum|median|mean).json"), readdir(data)) .|> get_sha |> unique
                         if length(commit_sha) == 1 # PRs can be benchmarked without comparing to anything
@@ -113,9 +123,6 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
                     end
 
                     artifact_id = artifact_row.id
-                    next_artifact_id[] += 1
-
-                    DBInterface.execute(db, "INSERT INTO artifact (id, name, date, type) VALUES ($(artifact_row.id), '$(artifact_row.name)', $(artifact_row.date), '$(artifact_row.type)')")
 
                     # if artifact_row.type == "master"
                     #     artifact_size_df = DataFrame()
