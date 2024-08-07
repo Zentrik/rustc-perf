@@ -54,15 +54,17 @@ function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to
 
             # Sometimes the same commit is benchmarked multiple times, we just keep the original data
             if !return_group_only
-                artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$(sha)' LIMIT 1") |> DataFrame
+                artifact_query = DBInterface.execute(db, "SELECT * FROM artifact WHERE name='$sha' LIMIT 1") |> DataFrame
 
                 if sha ∉ processed_commits
                     # all files for this commit should also hit continue so good
                     if !isempty(artifact_query) && DataFrame(DBInterface.execute(db, "SELECT EXISTS (SELECT * FROM pstat WHERE aid=$(artifact_query[1, :id]))"))[1, 1] == 1
-                        continue
-                        # TODO: Just overwrite data we also have results for not all data
-                        # DBInterface.execute(db, "DELETE FROM pstat WHERE aid=$aid")
-                        # artifact_query[1, "id"]
+                        if tag_predicate == "ALL"
+                            DBInterface.execute(db, "DELETE FROM pstat WHERE aid=$(artifact_query[1, "id"])")
+                            DBInterface.execute(db, "DELETE FROM pull_request_build WHERE bors_sha='$sha'")
+                        else
+                            continue
+                        end
                     end
 
                     local artifact_row, parent_sha
