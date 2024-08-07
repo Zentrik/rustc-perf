@@ -142,13 +142,13 @@ pub async fn handle_compare(
     let conn = ctxt.conn().await;
     let mut prev = comparison.prev(master_commits);
     if let ArtifactId::Commit(c) = &comparison.b.artifact {
-        if c.is_try() {
+        if c.is_try() && comparison.b.pr.is_some() { // Individual commits can be benchmarked not just PRs
             prev = conn.pr_prev_sha_of(comparison.b.pr.unwrap(), &c.sha).await
         }
     }
     let mut next = comparison.next(master_commits);
     if let ArtifactId::Commit(c) = &comparison.b.artifact {
-        if c.is_try() {
+        if c.is_try() && comparison.b.pr.is_some() {
             next = conn.pr_next_sha_of(comparison.b.pr.unwrap(), &c.sha).await
         }
     }
