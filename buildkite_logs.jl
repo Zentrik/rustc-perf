@@ -42,7 +42,12 @@ function get_log(sha, branch)
     details_json = HTTP.get(details_url).body |> JSON3.read
     idx = findfirst(x -> x.name == ":linux: build x86_64-linux-gnu", details_json.jobs)
 
+    idx_launch_builds = findfirst(x -> x.name == "Launch build jobs",details_json.jobs)
+
     try
+        if details_json.jobs[idx_launch_builds].exit_status isa Integer && details_json.jobs[idx_launch_builds].exit_status != 0 && isnothing(idx)
+            return :no_ci
+        end
         if details_json.jobs[idx].state != "finished"
             return :not_finished
         end
