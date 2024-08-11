@@ -47,25 +47,29 @@ const opened = ref(false);
       <template #label>Do another comparison</template>
       <template #content>
         <div class="commits section">
-          <div class="section-heading">Commits</div>
           <div
-            style="display: flex; flex-wrap: wrap; width: 100%; justify-content: space-around"
+            style="display: flex; flex-wrap: wrap; width: 100%"
           >
-            <div class="commit-input">
-              <label for="start-bound">Before</label>
-              <input
-                width="100em"
-                placeholder="YYYY-MM-DD, SHA, PR # or v1.x.x"
-                ref="startRef"
-              />
-            </div>
-            <div class="commit-input">
-              <label for="end-bound">After</label>
-              <input
-                width="100em"
-                placeholder="YYYY-MM-DD, SHA, PR # or v1.x.x"
-                ref="endRef"
-              />
+            <div class="section-heading">Commits</div>
+            <div
+              style="display: flex; flex-wrap: wrap; flex-grow: 1; justify-content: space-around"
+            >
+              <div class="commit-input">
+                <label for="start-bound">Before</label>
+                <input
+                  width="100em"
+                  placeholder="YYYY-MM-DD, SHA, PR # or v1.x.x"
+                  ref="startRef"
+                />
+              </div>
+              <div class="commit-input">
+                <label for="end-bound">After</label>
+                <input
+                  width="100em"
+                  placeholder="YYYY-MM-DD, SHA, PR # or v1.x.x"
+                  ref="endRef"
+                />
+              </div>
             </div>
           </div>
         </div>
