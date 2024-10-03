@@ -48,6 +48,9 @@ function get_log(sha, branch)
         if details_json.jobs[idx_launch_builds].exit_status isa Integer && details_json.jobs[idx_launch_builds].exit_status != 0 && isnothing(idx)
             return :no_ci
         end
+        if details_json.jobs[idx].exit_status isa Integer && details_json.jobs[idx].exit_status != 0
+            return :no_ci
+        end
         if details_json.jobs[idx].state != "finished"
             return :not_finished
         end
