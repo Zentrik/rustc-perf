@@ -4,7 +4,11 @@ using DataFrames, Dates, TimeZones
 using SQLite
 using HTTP, JSON3
 
-const headers = nothing
+const headers = if haskey(ENV, "GITHUB_TOKEN")
+    Dict("Authorization" => ENV["GITHUB_TOKEN"])
+else
+    nothing
+end
 
 median(x) = sort(x)[div(length(x), 2)+1]
 function process_benchmark_archive!(df, path, next_artifact_id, db, benchmark_to_pstat_series_id; return_group_only=false)
