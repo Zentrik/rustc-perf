@@ -4,6 +4,23 @@ using LibGit2, Dates
 include("upload_nanosoldier_to_db.jl")
 include("buildkite_logs.jl")
 
+@inline function SQLite.transaction(f::Function, db::SQLite.DB)
+    # generate a random name for the savepoint
+    name = string("SQLITE", SQLite.Random.randstring(10))
+    # execute(db, "PRAGMA synchronous = OFF;")
+    SQLite.transaction(db, name)
+    try
+        f()
+    catch
+        SQLite.rollback(db, name)
+        rethrow()
+    finally
+        # savepoints are not released on rollback
+        SQLite.commit(db, name)
+        # execute(db, "PRAGMA synchronous = ON;")
+    end
+end
+
 const sleep_time = Dates.Minute(5)
 const db_path = "/media/rag/NVME/Code/rustc-perf-db/julia.db"
 
@@ -28,6 +45,7 @@ function main()
 
     julia_dir = joinpath(@__DIR__, "..", "julia-rustc-perf")
     julia_repo = LibGit2.GitRepo(julia_dir)
+    db = SQLite.DB(db_path)
 
     start_server()
     atexit(kill_server)
@@ -55,11 +73,12 @@ function main()
                 idx = findfirst(x -> x == julia_old_head, shas)
                 shas = reverse(shas[1:(idx-1)])
 
+                DBInterface.execute(db, "BEGIN TRANSACTION")
+
                 artifact_size_df, pstat_df, first_unfinished_commit = process_logs(db_path, shas, julia_repo)
                 changed |= !isempty(artifact_size_df)
                 if !isempty(artifact_size_df)
                     kill_server()
-                    db = SQLite.DB(db_path)
                     SQLite.load!(artifact_size_df, db, "artifact_size")
                 end
 
@@ -70,10 +89,13 @@ function main()
                     println("Rolling back to prior to $first_unfinished_commit, i.e. $last_finished_commit")
                     LibGit2.reset!(julia_repo, LibGit2.GitCommit(julia_repo, last_finished_commit), LibGit2.Consts.RESET_HARD)
                 end
+
+                DBInterface.execute(db, "COMMIT")
             end
         catch
             println("Error processing logs")
             LibGit2.reset!(julia_repo, LibGit2.GitCommit(julia_repo, julia_old_head), LibGit2.Consts.RESET_HARD)
+            DBInterface.execute(db, "ROLLBACK")
             rethrow()
         end
 
@@ -89,6 +111,8 @@ function main()
 
         try
             if fetched
+                DBInterface.execute(db, "BEGIN TRANSACTION")
+
                 for rel_dir in ("by_date", "by_hash")
                     for benchmark_dir in readdir(joinpath(nanosoldier_dir, "benchmark", rel_dir), join=true)
                         if isdir(benchmark_dir) && fetch_time <= unix2datetime(mtime(benchmark_dir))
@@ -99,9 +123,12 @@ function main()
                         end
                     end
                 end
+
+                DBInterface.execute(db, "COMMIT")
             end
         catch
             println("Error processing benchmarks")
+            DBInterface.execute(db, "ROLLBACK")
             LibGit2.reset!(repo, LibGit2.GitCommit(repo, reports_old_head), LibGit2.Consts.RESET_HARD)
             rethrow()
         end

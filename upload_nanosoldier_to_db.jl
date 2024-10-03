@@ -5,7 +5,7 @@ using SQLite
 using HTTP, JSON3
 
 const headers = if haskey(ENV, "GITHUB_TOKEN")
-    Dict("Authorization" => ENV["GITHUB_TOKEN"])
+    Dict("Authorization" => "tohen " * ENV["GITHUB_TOKEN"])
 else
     nothing
 end

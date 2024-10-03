@@ -394,6 +394,7 @@ impl ConnectionManager for Sqlite {
         conn.pragma_update(None, "cache_size", -1280000).unwrap();
         conn.pragma_update(None, "journal_mode", "WAL").unwrap();
         conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        conn.pragma_update(None, "synchronous", "OFF").unwrap();
 
         self.1.call_once(|| {
             let version: i32 = conn
