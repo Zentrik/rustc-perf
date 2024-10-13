@@ -131,7 +131,7 @@ pub async fn handle_dashboard(ctxt: Arc<SiteCtxt>) -> ServerResult<dashboard::Re
 
     let runtime_benchmark_query = selector::RuntimeBenchmarkQuery::default()
         .benchmark(selector::Selector::All)
-        .metric(selector::Selector::One(Metric::WallTime));
+        .metric(selector::Selector::One(Metric::MinWallTime));
 
     let responses = ctxt
         .statistic_series(runtime_benchmark_query.clone(), aids.clone())
