@@ -33,6 +33,16 @@ pub async fn artifact_id_for_bound(
             .rfind(|commit| bound.right_match(master_commits, commit))
             .cloned()
     };
+    if is_left && commit.is_none() {
+        if bound == Bound::None {
+            commit = commits
+                .iter()
+                .rev()
+                .filter_map(|commit| bound.right_match(master_commits, commit).then(|| commit))
+                .nth(1)
+                .cloned();
+        }
+    }
     if commit.is_none() {
         if let Bound::Commit(c) = &bound {
             let pr_commit = ctxt
