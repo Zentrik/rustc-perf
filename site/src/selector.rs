@@ -22,26 +22,43 @@ pub async fn artifact_id_for_bound(
     is_left: bool,
 ) -> Option<ArtifactId> {
     let commits = data.commits();
+    let left_commit = commits
+        .iter()
+        .find(|commit| bound.left_match(master_commits, commit))
+        .cloned();
+    let right_commit = commits
+        .iter()
+        .rfind(|commit| bound.right_match(master_commits, commit))
+        .cloned();
     let mut commit = if is_left {
-        commits
-            .iter()
-            .find(|commit| bound.left_match(master_commits, commit))
-            .cloned()
-    } else {
-        commits
-            .iter()
-            .rfind(|commit| bound.right_match(master_commits, commit))
-            .cloned()
-    };
-    if is_left && commit.is_none() {
-        if bound == Bound::None {
-            commit = commits
+        if bound == Bound::None && left_commit == right_commit && left_commit.is_some() {
+            let master_commits_as_commits: Vec<_> = commits
                 .iter()
-                .rev()
-                .filter_map(|commit| bound.right_match(master_commits, commit).then(|| commit))
-                .nth(1)
-                .cloned();
+                .filter(|commit| {
+                    master_commits
+                        .iter()
+                        .any(|master_commit| master_commit.sha == commit.sha)
+                })
+                .collect();
+
+            master_commits_as_commits
+                .windows(2)
+                .find(|commits| commits[1].sha == left_commit.as_ref().unwrap().sha)
+                .map(|commits: &[&Commit]| commits[0])
+                .cloned()
+        } else {
+            left_commit
         }
+    } else {
+        right_commit
+    };
+    if is_left && commit.is_none() && bound == Bound::None {
+        commit = commits
+            .iter()
+            .rev()
+            .filter_map(|commit| bound.right_match(master_commits, commit).then(|| commit))
+            .nth(1)
+            .cloned();
     }
     if commit.is_none() {
         if let Bound::Commit(c) = &bound {

@@ -22,7 +22,7 @@ include("buildkite_logs.jl")
 end
 
 const sleep_time = Dates.Minute(5)
-const db_path = "/media/rag/NVME/Code/rustc-perf-db/julia.db"
+const db_path = joinpath(@__DIR__, "julia.db")
 
 # Taken from PProf.jl
 const proc = Ref{Union{Base.Process,Nothing}}(nothing)
