@@ -26,7 +26,7 @@ function get_logs(page)
     return sha_to_logs
 end
 
-function get_log(sha, branch)
+function get_log(sha, branch, commit_time)
     url = "https://buildkite.com/julialang/julia-$branch/builds?commit=$sha"
 
     r = HTTP.get(url)
@@ -57,6 +57,11 @@ function get_log(sha, branch)
     catch err
         println("Error processing build status for $sha")
         println("Error: $err")
+
+        if time() - commit_time > 60 * 60 * 6 # If no log after 6 hours, assumed failed
+            println("Build not finished after 6 hours at $(time()) for $sha commited at $commit_time, skipping")
+            return :no_ci
+        end
         return :not_finished
     end
 
@@ -102,8 +107,8 @@ function parse_logs!(sha_to_timings, sha_to_binary_sizes, sha_to_logs)
     end
 end
 
-function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metric_to_series_id)
-    log = get_log(sha, branch)
+function process_commit!(artifact_size_df, pstat_df, aid, sha, branch, init_metric_to_series_id, commit_time)
+    log = get_log(sha, branch, commit_time)
     if log isa Symbol
         return log
     end

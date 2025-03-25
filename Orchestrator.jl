@@ -166,7 +166,7 @@ function process_logs(db_path, shas, julia_repo)
 
         local res
         try
-            res = process_commit!(artifact_size_df, pstat_df, artifact_id, sha, "master", identity)
+            res = process_commit!(artifact_size_df, pstat_df, artifact_id, sha, "master", identity, LibGit2.author(LibGit2.GitCommit(julia_repo, sha)).time)
         catch err
             println("Error processing $sha logs")
             println("Error: $err") # Sometimes fetch fails
